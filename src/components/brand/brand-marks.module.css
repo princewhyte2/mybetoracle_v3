@@ -1,0 +1,80 @@
+.primaryLockup,
+.heritageMark {
+  display: inline-flex;
+  align-items: center;
+  color: var(--midnight);
+}
+
+.primaryLockup {
+  gap: 13px;
+}
+
+.primarySymbol {
+  width: 44px;
+  height: 44px;
+  flex: 0 0 44px;
+  color: var(--action-blue);
+}
+
+.wordmark {
+  display: inline-flex;
+  align-items: baseline;
+  white-space: nowrap;
+  font-family: var(--font-sora), sans-serif;
+  font-size: 30px;
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: 0;
+}
+
+.wordmarkLead {
+  color: inherit;
+}
+
+.wordmarkFocus {
+  color: var(--heritage-blue);
+  font-weight: 700;
+}
+
+.inverse {
+  color: var(--white);
+}
+
+.inverse .wordmarkFocus {
+  color: var(--oracle-ice);
+}
+
+.inverse .primarySymbol,
+.inverse .heritageBall {
+  color: var(--signal-blue);
+}
+
+.heritageMark {
+  gap: 7px;
+  font-family: var(--font-sora), sans-serif;
+  font-size: 38px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.heritageBall {
+  width: 36px;
+  height: 36px;
+  color: var(--action-blue);
+}
+
+@media (max-width: 560px) {
+  .primaryLockup {
+    gap: 10px;
+  }
+
+  .primarySymbol {
+    width: 38px;
+    height: 38px;
+    flex-basis: 38px;
+  }
+
+  .wordmark {
+    font-size: 24px;
+  }
+}

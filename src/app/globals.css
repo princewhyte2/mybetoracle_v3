@@ -1,1 +1,39 @@
 @import "tailwindcss";
+
+:root {
+  --midnight: #07111f;
+  --heritage-blue: #083f87;
+  --action-blue: #155eef;
+  --signal-blue: #2f80ff;
+  --sky-blue: #68a7ff;
+  --oracle-ice: #a9d3ff;
+  --blue-mist: #d7e8ff;
+  --canvas: #f7fafc;
+  --white: #ffffff;
+  --graphite: #1c2530;
+  --muted-text: #5f6c7e;
+  --border: #dce3ea;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  background: var(--canvas);
+}
+
+body {
+  margin: 0;
+  background: var(--canvas);
+  color: var(--graphite);
+  font-family: var(--font-manrope), sans-serif;
+  letter-spacing: 0;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
