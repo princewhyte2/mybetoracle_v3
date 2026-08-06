@@ -173,10 +173,11 @@
   border-bottom: 1px solid var(--border);
 }
 
-.navMock :global(svg) {
-  width: 34px;
-  height: 34px;
-  flex-basis: 34px;
+.navMock :global([class*="mboMark"]) {
+  width: 78px;
+  height: 36px;
+  flex-basis: 78px;
+  padding-right: 12px;
 }
 
 .navMock :global([class*="wordmark"]) {
@@ -251,16 +252,11 @@
   background: var(--white);
 }
 
-.appBadge > div {
-  gap: 3px;
+.appBadge > svg {
+  width: 68px;
+  height: 32px;
   color: var(--heritage-blue);
-  font-size: 23px;
-}
-
-.appBadge :global(svg) {
-  width: 22px;
-  height: 22px;
-  color: var(--heritage-blue);
+  --mbo-ball-color: var(--heritage-blue);
 }
 
 .iconPanel strong,
@@ -292,7 +288,10 @@
   padding: 24px;
 }
 
-.heritagePanel > div {
+.heritagePanel > svg {
+  display: block;
+  width: 120px;
+  height: auto;
   margin-top: 22px;
 }
 
@@ -443,26 +442,29 @@
   background: var(--heritage-blue);
 }
 
-.blueFinish :global([class*="heritageBall"]) {
+.blueFinish > svg {
   color: var(--white);
+  --mbo-ball-color: currentColor;
 }
 
 .inkFinish {
   background: var(--midnight);
 }
 
-.inkFinish :global([class*="heritageBall"]),
+.inkFinish :global([class*="mboMark"]),
 .inkFinish :global([class*="wordmarkFocus"]) {
   color: var(--white);
+  --mbo-ball-color: currentColor;
 }
 
 .paperFinish {
   background: var(--white);
 }
 
-.paperFinish :global([class*="heritageBall"]),
+.paperFinish :global([class*="mboMark"]),
 .paperFinish :global([class*="wordmarkFocus"]) {
   color: var(--midnight);
+  --mbo-ball-color: currentColor;
 }
 
 @media (max-width: 900px) {
@@ -572,18 +574,14 @@
     border-radius: 18px;
   }
 
-  .appIcon svg {
-    width: 19px;
-    height: 19px;
-  }
-
   .appBadge {
     width: 64px;
     height: 32px;
   }
 
-  .appBadge > div {
-    font-size: 19px;
+  .appBadge > svg {
+    width: 56px;
+    height: 26px;
   }
 
   .scaleStrip {

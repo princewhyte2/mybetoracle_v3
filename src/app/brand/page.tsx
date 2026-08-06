@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 
-import { HeritageMonogram, MicroMark, PrimaryLockup } from "@/components/brand/brand-marks";
+import { MboMark, MicroMark, PrimaryLockup } from "@/components/brand/brand-marks";
 import styles from "./page.module.css";
 
 export const metadata: Metadata = {
@@ -76,7 +76,7 @@ export default function BrandReviewPage() {
           <div className={styles.iconPanel}>
             <div className={styles.appIcon}>
               <div className={styles.appBadge}>
-                <HeritageMonogram />
+                <MboMark />
               </div>
             </div>
             <div>
@@ -88,7 +88,7 @@ export default function BrandReviewPage() {
 
           <div className={styles.heritagePanel}>
             <p>RECOGNITION ANCHOR</p>
-            <HeritageMonogram />
+            <MboMark />
             <span>The heavy MB and football O remain the central symbol rather than a secondary reference.</span>
           </div>
         </div>
@@ -132,7 +132,7 @@ export default function BrandReviewPage() {
         </div>
         <div className={styles.finishGrid}>
           <div className={styles.blueFinish}>
-            <HeritageMonogram inverse />
+            <MboMark />
           </div>
           <div className={styles.inkFinish}>
             <PrimaryLockup inverse />

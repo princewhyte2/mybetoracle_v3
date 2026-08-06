@@ -1,15 +1,19 @@
-.primaryLockup,
-.heritageMark {
+.primaryLockup {
   display: inline-flex;
   align-items: center;
+  gap: 18px;
   color: var(--midnight);
 }
 
-.primaryLockup {
-  gap: 18px;
+.mboMark {
+  width: 96px;
+  height: 45px;
+  color: var(--midnight);
+  --mbo-ball-color: var(--action-blue);
 }
 
-.primaryLockup > .heritageMark {
+.primaryLockup > .mboMark {
+  width: 114px;
   padding-right: 18px;
   border-right: 1px solid var(--border);
 }
@@ -42,26 +46,13 @@
   color: var(--oracle-ice);
 }
 
-.inverse .heritageBall {
-  color: var(--signal-blue);
+.inverse .mboMark {
+  color: var(--white);
+  --mbo-ball-color: var(--signal-blue);
 }
 
-.inverse.primaryLockup > .heritageMark {
+.inverse.primaryLockup > .mboMark {
   border-right-color: rgba(169, 211, 255, 0.3);
-}
-
-.heritageMark {
-  gap: 7px;
-  font-family: var(--font-sora), sans-serif;
-  font-size: 38px;
-  font-weight: 700;
-  line-height: 1;
-}
-
-.heritageBall {
-  width: 36px;
-  height: 36px;
-  color: var(--action-blue);
 }
 
 @media (max-width: 560px) {
@@ -73,13 +64,9 @@
     font-size: 21px;
   }
 
-  .primaryLockup > .heritageMark {
+  .primaryLockup > .mboMark {
+    width: 87px;
+    height: 34px;
     padding-right: 12px;
-    font-size: 29px;
-  }
-
-  .primaryLockup > .heritageMark .heritageBall {
-    width: 29px;
-    height: 29px;
   }
 }

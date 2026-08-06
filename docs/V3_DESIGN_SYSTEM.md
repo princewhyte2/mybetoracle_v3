@@ -129,6 +129,11 @@ The existing mobile adaptive icon establishes the primary recognition anchor:
 the heavy joined `MB` followed by a football acting as the `O`. Preserve that
 MBO silhouette when modernizing the production identity.
 
+The `MB` is a custom fused ligature with shared visual mass. Never reproduce it
+as two normally typeset letters, loose characters, or letters separated by
+tracking. Its construction may take inspiration from tightly integrated sports
+wordmarks such as bet365, but the MyBetOracle geometry must remain original.
+
 The exact legacy royal blue and white rectangular plaque are not mandatory.
 Apply the approved Oracle Blue system and choose the variant with the strongest
 contrast and most premium presentation for each context.
