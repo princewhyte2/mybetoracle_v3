@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 
-import { HeritageMonogram, OracleBallMark, PrimaryLockup } from "@/components/brand/brand-marks";
+import { HeritageMonogram, MicroMark, PrimaryLockup } from "@/components/brand/brand-marks";
 import styles from "./page.module.css";
 
 export const metadata: Metadata = {
@@ -18,8 +18,8 @@ export default function BrandReviewPage() {
           <p className={styles.kicker}>MYBETORACLE / IDENTITY 01</p>
           <h1>Recognition, rebuilt.</h1>
           <p className={styles.summary}>
-            The familiar MB and football remain in the system. The new ball mark carries the smallest surfaces with
-            cleaner geometry, while the full wordmark presents MyBetOracle as one premium intelligence brand.
+            The MBO silhouette remains the recognition anchor. Its heavy MB and football O are rebuilt with cleaner
+            geometry, while a dedicated MB micro-mark fixes the favicon problem without discarding brand memory.
           </p>
         </div>
       </header>
@@ -75,19 +75,21 @@ export default function BrandReviewPage() {
 
           <div className={styles.iconPanel}>
             <div className={styles.appIcon}>
-              <OracleBallMark />
+              <div className={styles.appBadge}>
+                <HeritageMonogram />
+              </div>
             </div>
             <div>
               <p>APP ICON</p>
-              <strong>Oracle ball</strong>
-              <span>Clear without compressing the MB initials.</span>
+              <strong>MBO rebuilt</strong>
+              <span>The familiar silhouette is larger, cleaner and centered inside the adaptive safe zone.</span>
             </div>
           </div>
 
           <div className={styles.heritagePanel}>
-            <p>COMPACT HERITAGE LOCKUP</p>
+            <p>RECOGNITION ANCHOR</p>
             <HeritageMonogram />
-            <span>The recognized MB and ball relationship remains available where it has enough room.</span>
+            <span>The heavy MB and football O remain the central symbol rather than a secondary reference.</span>
           </div>
         </div>
       </section>
@@ -97,14 +99,14 @@ export default function BrandReviewPage() {
           <p>03</p>
           <div>
             <h2 id="micro-heading">Micro-scale test</h2>
-            <span>One symbol from favicon to social avatar</span>
+            <span>A purpose-built MB mark for the smallest browser surfaces</span>
           </div>
         </div>
         <div className={styles.scaleStrip}>
           {markSizes.map((size) => (
             <div className={styles.scaleItem} key={size}>
               <div className={styles.scaleCanvas}>
-                <OracleBallMark className={styles.scaleMark} />
+                <MicroMark className={styles.scaleMark} />
               </div>
               <span>{size}px</span>
             </div>
@@ -113,7 +115,7 @@ export default function BrandReviewPage() {
         <div className={styles.actualSizes} aria-label="Actual mark sizes">
           {markSizes.map((size) => (
             <div key={size}>
-              <OracleBallMark className={styles.actualMark} />
+              <MicroMark className={styles.actualMark} />
               <span>{size}</span>
             </div>
           ))}

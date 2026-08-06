@@ -239,13 +239,28 @@
   place-items: center;
   border-radius: 20px;
   background: var(--midnight);
-  color: var(--signal-blue);
   box-shadow: 0 16px 32px rgba(7, 17, 31, 0.16);
 }
 
-.appIcon svg {
-  width: 66px;
-  height: 66px;
+.appBadge {
+  width: 78px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  border-radius: 6px;
+  background: var(--white);
+}
+
+.appBadge > div {
+  gap: 3px;
+  color: var(--heritage-blue);
+  font-size: 23px;
+}
+
+.appBadge :global(svg) {
+  width: 22px;
+  height: 22px;
+  color: var(--heritage-blue);
 }
 
 .iconPanel strong,
@@ -436,7 +451,7 @@
   background: var(--midnight);
 }
 
-.inkFinish :global([class*="primarySymbol"]),
+.inkFinish :global([class*="heritageBall"]),
 .inkFinish :global([class*="wordmarkFocus"]) {
   color: var(--white);
 }
@@ -445,7 +460,7 @@
   background: var(--white);
 }
 
-.paperFinish :global([class*="primarySymbol"]),
+.paperFinish :global([class*="heritageBall"]),
 .paperFinish :global([class*="wordmarkFocus"]) {
   color: var(--midnight);
 }
@@ -558,8 +573,17 @@
   }
 
   .appIcon svg {
-    width: 54px;
-    height: 54px;
+    width: 19px;
+    height: 19px;
+  }
+
+  .appBadge {
+    width: 64px;
+    height: 32px;
+  }
+
+  .appBadge > div {
+    font-size: 19px;
   }
 
   .scaleStrip {

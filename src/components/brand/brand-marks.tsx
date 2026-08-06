@@ -7,7 +7,6 @@ type MarkProps = {
 
 type LockupProps = {
   inverse?: boolean;
-  compact?: boolean;
 };
 
 export function OracleBallMark({ className, title = "MyBetOracle" }: MarkProps) {
@@ -46,16 +45,32 @@ export function OracleBallMark({ className, title = "MyBetOracle" }: MarkProps) 
   );
 }
 
-export function PrimaryLockup({ inverse = false, compact = false }: LockupProps) {
+export function MicroMark({ className, title = "MyBetOracle" }: MarkProps) {
   return (
-    <div className={`${styles.primaryLockup} ${inverse ? styles.inverse : ""}`}>
-      <OracleBallMark className={styles.primarySymbol} title="" />
-      {!compact && (
-        <span className={styles.wordmark}>
-          <span className={styles.wordmarkLead}>MyBet</span>
-          <span className={styles.wordmarkFocus}>Oracle</span>
-        </span>
-      )}
+    <svg
+      aria-label={title}
+      className={className}
+      role="img"
+      viewBox="0 0 64 64"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <rect width="60" height="60" x="2" y="2" rx="10" fill="currentColor" />
+      <path
+        d="M7 46V18h6l7 13 7-13h6v28h-7V32l-6 11-6-11v14H7Zm28 0V18h12c7 0 10 3 10 8 0 3-1.5 5.2-4.5 6.5 3.7 1.1 5.5 3.4 5.5 6.7 0 4.5-3.6 6.8-10.7 6.8H35Zm7-22v6h4.4c2.4 0 3.6-1 3.6-3s-1.2-3-3.6-3H42Zm0 11.5V40h5c2.5 0 3.7-.8 3.7-2.3 0-1.5-1.2-2.2-3.7-2.2h-5Z"
+        fill="white"
+      />
+    </svg>
+  );
+}
+
+export function PrimaryLockup({ inverse = false }: LockupProps) {
+  return (
+    <div className={`${styles.primaryLockup} ${inverse ? styles.inverse : ""}`} aria-label="MyBetOracle">
+      <HeritageMonogram inverse={inverse} />
+      <span className={styles.wordmark} aria-hidden="true">
+        <span className={styles.wordmarkLead}>MyBet</span>
+        <span className={styles.wordmarkFocus}>Oracle</span>
+      </span>
     </div>
   );
 }

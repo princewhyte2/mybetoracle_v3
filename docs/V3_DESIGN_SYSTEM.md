@@ -125,10 +125,24 @@ deficiencies before they are approved.
 
 ## Logo Direction
 
-The current V2 raster logo is reference material, not the V3 production logo.
-Retain the MyBetOracle name and its blue recognition while developing a cleaner
-vector symbol and Sora-compatible wordmark. Logo exploration must not delay the
-core product interface and will be reviewed separately.
+The existing mobile adaptive icon establishes the primary recognition anchor:
+the heavy joined `MB` followed by a football acting as the `O`. Preserve that
+MBO silhouette when modernizing the production identity.
+
+The exact legacy royal blue and white rectangular plaque are not mandatory.
+Apply the approved Oracle Blue system and choose the variant with the strongest
+contrast and most premium presentation for each context.
+
+Use a responsive logo system:
+
+- the modernized MBO is the primary symbol and app identity
+- the full MyBetOracle wordmark accompanies it when space permits
+- a purpose-built MB micro-mark is used for favicon-scale surfaces where the
+  football detail and horizontal MBO silhouette cannot remain legible
+
+The current raster artwork is reference material, not the V3 production master.
+Production assets must use controlled vector geometry and include light, dark,
+monochrome, app-icon, and micro-mark variants.
 
 ## Required Design Workflow
 
