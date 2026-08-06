@@ -123,6 +123,26 @@ value, label, pattern, line style, or shape as appropriate. Chart palettes and
 Oracle Score bands must be tested for contrast and common color-vision
 deficiencies before they are approved.
 
+## Localization And Content Fit
+
+The minimum V3 locale set is English (`en`), Spanish (`es`), French (`fr`),
+German (`de`), Italian (`it`), and Portuguese (`pt`). The visual system must be
+capable of supporting additional locales later.
+
+- Do not size navigation, buttons, tabs, cards, or controls around English copy.
+- Test representative interfaces with longer German, French, and Portuguese
+  labels before approval.
+- Wrap text where appropriate and preserve stable control dimensions where
+  wrapping would damage interaction quality.
+- Format dates, times, numbers, percentages, and competition names by locale.
+- Keep icons, flags, and color separate from translated meaning.
+- Do not encode user-visible copy directly inside reusable visual primitives.
+- Reserve future support for different writing directions in layout decisions,
+  even though the initial six locales use left-to-right scripts.
+
+English mock data is acceptable during the first design pass. Multilingual fit
+is still part of component approval and cannot be postponed until integration.
+
 ## Logo Direction
 
 The existing mobile adaptive icon establishes the primary recognition anchor:

@@ -44,3 +44,20 @@ Actions, route handlers, configuration, build behavior, and deployment.
   semantic states must have distinct jobs.
 - Design real product workflows and all relevant responsive, loading, empty,
   error, unavailable-data, and locked states before designing marketing pages.
+
+## MyBetOracle V3 Localization Rule
+
+- V3 launches with at least the six locales supported by the current product:
+  English (`en`), Spanish (`es`), French (`fr`), German (`de`), Italian (`it`),
+  and Portuguese (`pt`). More locales must be addable without redesigning the
+  application or duplicating the complete route tree by hand.
+- English may be used as the initial mock-content language, but no component,
+  route decision, navigation pattern, layout, or data contract may assume an
+  English-only product.
+- Design for text expansion, locale-specific date and number formatting,
+  translated metadata, locale-aware links, and future writing-direction needs.
+- Do not advertise or generate a localized public page until that exact page
+  exists and satisfies the publication rules inherited from V2.
+- Authentication, authorization, and access gating are deferred during the UI
+  prototype phase. Build and review complete product surfaces with mock data;
+  integration and gating behavior will be planned after visual approval.
