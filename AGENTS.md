@@ -26,6 +26,9 @@ Actions, route handlers, configuration, build behavior, and deployment.
 
 ## MyBetOracle V3 Design Directives
 
+- Before any UI or visual work, read `docs/V3_DESIGN_SYSTEM.md`. It is the
+  canonical, approved V3 design foundation. Do not replace its typography,
+  palette, or visual direction without explicit user approval.
 - Build the public landing page last, after the core product surfaces and
   design system have been validated.
 - V3 must feel exceptionally premium, precise, and trustworthy. Treat visual
