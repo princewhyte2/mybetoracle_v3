@@ -12,7 +12,11 @@
   --white: #ffffff;
   --graphite: #1c2530;
   --muted-text: #5f6c7e;
+  --muted-strong: #465568;
+  --dark-subtle: #9fb0c4;
+  --dark-muted: #c2cede;
   --border: #dce3ea;
+  --border-strong: #c5d0dc;
 }
 
 * {

@@ -14,6 +14,11 @@ football intelligence product, not a generic dashboard or gambling interface.
 Premium quality must come from typography, hierarchy, spacing, information
 design, interaction quality, and restrained detail rather than decoration.
 
+Customer-facing combination features use `Multi-Picks`. Gambling-led labels
+such as `Acca`, `accumulator`, stake, payout and place bet are not part of the
+public design language. Internal route names and data models may retain legacy
+domain terminology where changing them would add implementation risk.
+
 The established MyBetOracle association with blue must be preserved. V3 must
 not be rebranded around red, green, orange, purple, or another dominant hue.
 
@@ -73,7 +78,11 @@ integration so they are self-hosted and do not cause layout shift.
 | `white` | `#FFFFFF` | Raised and focused surfaces |
 | `graphite` | `#1C2530` | Primary text on light surfaces |
 | `muted-text` | `#5F6C7E` | Secondary readable text |
+| `muted-strong` | `#465568` | Small secondary labels on light surfaces |
+| `dark-subtle` | `#9FB0C4` | Tertiary labels on Midnight surfaces |
+| `dark-muted` | `#C2CEDE` | Secondary readable text on Midnight surfaces |
 | `border` | `#DCE3EA` | Dividers, outlines, and quiet structure |
+| `border-strong` | `#C5D0DC` | Dense table and control separation |
 
 `heritage-blue` preserves existing brand equity. `action-blue` is the primary
 interactive color. Blue is applied intentionally; the interface must not become
@@ -89,6 +98,9 @@ a one-note wall of blue.
 | Oracle Ice | Midnight | 12.13:1 |
 | Blue Mist | Heritage Blue | 8.15:1 |
 | Muted Text | Canvas | 5.09:1 |
+| Muted Strong | White | 7.61:1 |
+| Dark Subtle | Midnight | 8.55:1 |
+| Dark Muted | Midnight | 11.88:1 |
 
 Revalidate contrast whenever a token is used in a new role. Do not communicate
 meaning through color alone.

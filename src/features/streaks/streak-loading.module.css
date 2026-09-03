@@ -1,0 +1,81 @@
+.loadingShell {
+  display: grid;
+  grid-template-columns: 190px minmax(530px, 1fr) 300px;
+  max-width: 1240px;
+  min-height: calc(100vh - 64px);
+  margin: 0 auto;
+}
+
+.loadingSide,
+.loadingRail {
+  border-right: 1px solid var(--border);
+  background: var(--white);
+}
+
+.loadingRail {
+  border-right: 0;
+  border-left: 1px solid var(--border);
+}
+
+.loadingMain {
+  padding: 24px 18px;
+}
+
+.loadingTitle,
+.loadingFilters,
+.loadingTabs,
+.loadingTable span {
+  background: linear-gradient(90deg, #e9eff5 20%, #f7fafc 50%, #e9eff5 80%);
+  background-size: 240% 100%;
+  animation: pulse 1.4s ease-in-out infinite;
+}
+
+.loadingTitle {
+  width: 210px;
+  height: 43px;
+}
+
+.loadingFilters {
+  height: 42px;
+  margin-top: 18px;
+}
+
+.loadingTabs {
+  height: 39px;
+  margin-top: 12px;
+}
+
+.loadingTable {
+  display: grid;
+  gap: 1px;
+  margin-top: 52px;
+  border: 1px solid var(--border);
+  background: var(--border);
+}
+
+.loadingTable span {
+  height: 54px;
+}
+
+@keyframes pulse {
+  from { background-position: 100% 0; }
+  to { background-position: -100% 0; }
+}
+
+@media (max-width: 1100px) {
+  .loadingShell { grid-template-columns: 190px minmax(0, 1fr); }
+  .loadingRail { display: none; }
+}
+
+@media (max-width: 820px) {
+  .loadingShell { display: block; }
+  .loadingSide { display: none; }
+  .loadingMain { padding: 18px 12px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .loadingTitle,
+  .loadingFilters,
+  .loadingTabs,
+  .loadingTable span { animation: none; }
+}

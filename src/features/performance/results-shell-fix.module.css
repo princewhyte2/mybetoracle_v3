@@ -1,0 +1,43 @@
+.shell > header {
+  background: #061325;
+  border-bottom-color: #20344a;
+}
+
+.shell > header button {
+  color: #fff;
+}
+
+.shell > header button[aria-label] {
+  border-color: #2a3b50;
+  background: #0c1a2d;
+}
+
+.shell > header button:last-child {
+  border-color: #2a3b50;
+  background: #0c1a2d;
+}
+
+.shell > header label {
+  border-color: #2a3b50;
+  background: #132235;
+  color: #aab7c7;
+}
+
+.shell > header input,
+.shell > header select {
+  color: #fff;
+}
+
+.shell > header input::placeholder {
+  color: #aab7c7;
+}
+
+.shell > header kbd {
+  border-color: #405066;
+  background: #0c1a2d;
+  color: #cbd5e1;
+}
+
+.shell > header select {
+  background: #061325;
+}

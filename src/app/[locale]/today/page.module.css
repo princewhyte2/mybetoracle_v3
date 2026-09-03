@@ -1,0 +1,6 @@
+.state { min-height: 100vh; display: grid; place-items: center; padding: 24px; background: var(--surface-canvas, #f4f7fb); color: var(--text-primary, #10233f); }
+.state > div { width: min(100%, 520px); padding: 40px; border: 1px solid rgba(24, 64, 112, .12); border-radius: 20px; background: #fff; box-shadow: 0 24px 70px rgba(15, 43, 76, .12); }
+.state span { color: #155ee7; font-size: 13px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
+.state h1 { margin: 12px 0 8px; font-size: clamp(26px, 5vw, 38px); letter-spacing: -.035em; }
+.state p { margin: 0; color: #53657c; line-height: 1.65; }
+.state small { display: block; margin-top: 22px; color: #75849a; }

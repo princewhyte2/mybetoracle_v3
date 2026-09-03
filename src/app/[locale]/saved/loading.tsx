@@ -1,0 +1,1 @@
+export default function Loading(){return <main style={{minHeight:"100vh",background:"#f5f7fa",padding:"96px 8%"}}><div style={{width:170,height:32,background:"#e3e8ef",marginBottom:20}}/><div style={{height:150,background:"#103e80",marginBottom:15}}/><div style={{height:480,background:"#fff",border:"1px solid #e0e5eb"}}/></main>}

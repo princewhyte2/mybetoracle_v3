@@ -6,6 +6,7 @@ import styles from "./page.module.css";
 export const metadata: Metadata = {
   title: "V3 Identity Review | MyBetOracle",
   description: "MyBetOracle V3 logo system review board",
+  robots: { index: false, follow: false },
 };
 
 const markSizes = [16, 24, 32, 48, 64] as const;

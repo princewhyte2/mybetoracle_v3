@@ -8,6 +8,32 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 <!-- END:nextjs-agent-rules -->
 
+## Cross-Workspace Engineering Governance
+
+Before any integration, API, authentication, gating, caching, performance, SEO,
+or launch-phase work, read
+`../../DE/MYBETORACLE_V3_ENGINEERING_GOVERNANCE.md` completely. It is the
+founder-approved cross-product boundary and quality contract.
+
+No integration or launch phase implementation may begin until the founder has
+reviewed and explicitly approved its written plan. Approval applies only to the
+reviewed scope; material changes require a revised plan and renewed approval.
+
+For the active Today integration, read
+`../../DE/MYBETORACLE_V3_TODAY_ACTIVE_HANDOFF.md` and
+`../../DE/doubleengine/plans/mybetoracle-v3-today-end-to-end-integration.md`
+completely. The founder approved the revised Phase 1A scope on 2026-08-17;
+material expansion still requires a revised plan and renewed approval.
+
+## Canonical Launch Sequence
+
+Before integration or launch work, read `docs/V3_LAUNCH_EXECUTION_PLAN.md`.
+Its Phase 1 through Phase 8 numbering is the source of truth for execution
+order. Do not reorder phases or expand launch scope without an explicit product
+decision. The current objective is a stable launch, not subjective UI
+perfection; restrict pre-launch UI changes to the blockers defined in that
+document.
+
 ## MyBetOracle V3 Next.js Rule
 
 The generated rule above is mandatory for every session and every agent.
@@ -26,6 +52,8 @@ Actions, route handlers, configuration, build behavior, and deployment.
 
 ## MyBetOracle V3 Design Directives
 
+- Read `docs/V3_BUILD_STATUS.md` at the start of every V3 session so work
+  continues from the current approved product stage.
 - Before any UI or visual work, read `docs/V3_DESIGN_SYSTEM.md`. It is the
   canonical, approved V3 design foundation. Do not replace its typography,
   palette, or visual direction without explicit user approval.
@@ -61,3 +89,18 @@ Actions, route handlers, configuration, build behavior, and deployment.
 - Authentication, authorization, and access gating are deferred during the UI
   prototype phase. Build and review complete product surfaces with mock data;
   integration and gating behavior will be planned after visual approval.
+
+## MyBetOracle V3 Public Terminology Rule
+
+- Use `Multi-Picks` as the public product name in every locale. Do not display
+  `Acca`, `accumulator`, or localized gambling-led equivalents in product copy.
+- Use `Oracle Daily` as the public name for the separate daily publication.
+  Keep `/betslip` and betslip model names internal only.
+- Internal route names, API contracts, types, and legacy data fields may retain
+  accumulator terminology where changing them would break integration.
+- Frame odds as recorded analytical evidence. Do not use stake, payout,
+  returns, deposit, wager, or place-bet language, and do not imply that users
+  gamble or transact through MyBetOracle.
+- Preserve established football market notation such as `1X2`, `O/U`,
+  `GG/NG`, and the `Oracle Score` product name.
+- Read `docs/V3_LOCALIZATION_STANDARD.md` before translating public UI copy.
