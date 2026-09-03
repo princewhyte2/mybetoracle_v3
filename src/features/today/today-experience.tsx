@@ -311,7 +311,6 @@ export function TodayExperience({ data, locale }: { data: TodayData; locale: Loc
   const common = getMessages(locale).common;
   const statuses = { won: common.won, lost: common.lost, void: common.void };
   const allMatches = useMemo(() => feed.competitions.flatMap((competition) => competition.matches), [feed.competitions]);
-  const liveFixtureQuery = useMemo(() => allMatches.flatMap((match) => match.state !== "finished" && match.slug?.split("--").at(-1) ? [match.slug.split("--").at(-1)!] : []).slice(0, 50).join(","), [allMatches]);
   const [filter, setFilter] = useState<Filter>("all");
   const [marketLens, setMarketLens] = useState<PredictionLens>("best");
   const [query, setQuery] = useState("");
@@ -329,6 +328,7 @@ export function TodayExperience({ data, locale }: { data: TodayData; locale: Loc
   const [searchFailed, setSearchFailed] = useState(false);
   const [searchAttempt, setSearchAttempt] = useState(0);
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const loadMoreTriggerRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     const handleSearchShortcut = (event: KeyboardEvent) => {
@@ -389,17 +389,25 @@ export function TodayExperience({ data, locale }: { data: TodayData; locale: Loc
   }, [locale]);
 
   useEffect(() => {
-    if (!liveFixtureQuery) return;
-    const source = new EventSource(`/api/live?fixtures=${encodeURIComponent(liveFixtureQuery)}`);
+    const source = new EventSource(`/api/live?date=${encodeURIComponent(feed.dateIso.slice(0, 10))}`);
     const update = (event: MessageEvent<string>) => { try {
-      const payload = JSON.parse(event.data) as { fixtureId?: string; statusCode?: string; homeScore?: number | null; awayScore?: number | null; elapsedMinute?: number | null };
+      const payload = JSON.parse(event.data) as { fixtureId?: string; statusCode?: string; homeScore?: number | null; awayScore?: number | null; elapsedMinute?: number | null; predictionResults?: Array<{ predictionId: string; marketGroup: PredictionMarket; result: "PENDING" | "WON" | "LOST" | "VOID" }> };
       if (!payload.fixtureId) return;
-      const apply = (match: Match): Match => match.id !== payload.fixtureId ? match : { ...match, statusCode: payload.statusCode ?? match.statusCode, state: payload.statusCode ? stateForLiveCode(payload.statusCode) : match.state, kickoff: payload.statusCode ? `${payload.statusCode}${payload.elapsedMinute !== null && payload.elapsedMinute !== undefined ? ` ${payload.elapsedMinute}'` : ""}` : match.kickoff, elapsedMinute: payload.elapsedMinute ?? match.elapsedMinute, score: payload.homeScore !== undefined || payload.awayScore !== undefined ? [payload.homeScore ?? null, payload.awayScore ?? null] : match.score };
+      const apply = (match: Match): Match => {
+        if (match.id !== payload.fixtureId) return match;
+        const results = new Map((payload.predictionResults ?? []).map((result) => [result.predictionId, result.result]));
+        const markets = Object.fromEntries(Object.entries(match.markets).map(([group, market]) => {
+          const result = market.predictionId ? results.get(market.predictionId) : undefined;
+          const outcome: TipOutcome | undefined = result === "WON" ? "won" : result === "LOST" ? "lost" : result === "VOID" ? "void" : market.outcome;
+          return [group, { ...market, outcome }];
+        })) as Match["markets"];
+        return { ...match, markets, statusCode: payload.statusCode ?? match.statusCode, state: payload.statusCode ? stateForLiveCode(payload.statusCode) : match.state, kickoff: payload.statusCode ? `${payload.statusCode}${payload.elapsedMinute !== null && payload.elapsedMinute !== undefined ? ` ${payload.elapsedMinute}'` : ""}` : match.kickoff, elapsedMinute: payload.elapsedMinute ?? match.elapsedMinute, score: payload.homeScore !== undefined || payload.awayScore !== undefined ? [payload.homeScore ?? null, payload.awayScore ?? null] : match.score };
+      };
       setFeed((current) => ({ ...current, competitions: current.competitions.map((competition) => ({ ...competition, matches: competition.matches.map(apply) })) }));
       setSelectedMatch((current) => apply(current));
     } catch {} };
     source.addEventListener("fixture_update", update as EventListener); return () => source.close();
-  }, [liveFixtureQuery]);
+  }, [feed.dateIso]);
 
   const selectedDate = useMemo(() => new Date(feed.dateIso), [feed.dateIso]);
 
@@ -420,6 +428,16 @@ export function TodayExperience({ data, locale }: { data: TodayData; locale: Loc
   }, [feed.competitions, filter, followed]);
 
   const visibleCompetitions = filteredCompetitions.slice(0, visibleCompetitionCount);
+
+  useEffect(() => {
+    const trigger = loadMoreTriggerRef.current;
+    if (!trigger || typeof IntersectionObserver === "undefined") return;
+    const observer = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting && !loadingMore) trigger.click();
+    }, { rootMargin: "500px 0px" });
+    observer.observe(trigger);
+    return () => observer.disconnect();
+  }, [feed.pagination.hasMore, filteredCompetitions.length, loadingMore, visibleCompetitionCount]);
 
   async function loadMoreFixtures() {
     if (loadingMore || !feed.pagination.hasMore || !feed.pagination.nextCursor) return;
@@ -761,6 +779,7 @@ export function TodayExperience({ data, locale }: { data: TodayData; locale: Loc
             )}
             {!loadingView && !searchLoading && !viewFailed && !searchFailed && visibleCompetitionCount < filteredCompetitions.length && (
               <button
+                ref={loadMoreTriggerRef}
                 className={styles.showMoreButton}
                 onClick={() => setVisibleCompetitionCount((current) => current + 20)}
               >
@@ -769,7 +788,7 @@ export function TodayExperience({ data, locale }: { data: TodayData; locale: Loc
               </button>
             )}
             {!loadingView && !searchLoading && !viewFailed && !searchFailed && visibleCompetitionCount >= filteredCompetitions.length && feed.pagination.hasMore && (
-              <button className={styles.showMoreButton} onClick={() => void loadMoreFixtures()} disabled={loadingMore}>
+              <button ref={loadMoreTriggerRef} className={styles.showMoreButton} onClick={() => void loadMoreFixtures()} disabled={loadingMore}>
                 {loadingMore ? `${showMoreLabels[locale]}…` : loadMoreFailed ? systemLabels[locale].retry : showMoreLabels[locale]}
                 <span>{allMatches.length} / {feed.pagination.total}</span>
               </button>

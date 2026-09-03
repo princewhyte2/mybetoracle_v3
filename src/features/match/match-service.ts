@@ -20,6 +20,7 @@ function items(section: unknown): unknown[] { const value = object(section); ret
 function availability(section: unknown, fallback: Availability = "not_available"): Availability { const value = object(section)?.availability; return value === "available" || value === "not_confirmed" || value === "not_available" ? value : fallback; }
 function shortName(name: string) { const parts = name.split(/\s+/).filter(Boolean); return (parts.length > 1 ? parts.map((part) => part[0]).join("") : name.slice(0, 3)).slice(0, 3).toUpperCase(); }
 function status(code: string): MatchDetail["status"] { if (["FT", "AET", "PEN"].includes(code)) return "finished"; if (["NS", "TBD", "PST", "CANC", "ABD", "AWD", "WO"].includes(code)) return "scheduled"; return "live"; }
+function outcome(value: unknown): OracleMarket["outcome"] { return value === "WON" ? "won" : value === "LOST" ? "lost" : value === "VOID" ? "void" : undefined; }
 
 function parseMatch(payload: unknown, locale: Locale): MatchDetail {
   const root = object(payload); const fixture = object(root?.fixture); const home = object(fixture?.homeTeam); const away = object(fixture?.awayTeam); const competition = object(fixture?.competition);
@@ -29,7 +30,7 @@ function parseMatch(payload: unknown, locale: Locale): MatchDetail {
   const predictions = Array.isArray(fixture.predictions) ? fixture.predictions.flatMap((entry): OracleMarket[] => {
     const prediction = object(entry); if (!prediction) return [];
     const group = text(prediction.marketGroup) ?? ""; const latestOdds = Array.isArray(prediction.latestOdds) ? object(prediction.latestOdds[0]) : null;
-    return [{ predictionId: text(prediction.id), market: group, marketType: text(prediction.marketType), marketValue: text(prediction.marketValue), selection: text(prediction.selectionLabel) ?? "Unavailable", shortSelection: text(prediction.selectionShortLabel) ?? "Unavailable", odds: number(latestOdds?.decimalOdds)?.toFixed(2) ?? null, confidence: number(prediction.confidenceScore) ?? 0, available: prediction.availability === "AVAILABLE" }];
+    return [{ predictionId: text(prediction.id), market: group, marketType: text(prediction.marketType), marketValue: text(prediction.marketValue), selection: text(prediction.selectionLabel) ?? "Unavailable", shortSelection: text(prediction.selectionShortLabel) ?? "Unavailable", odds: number(latestOdds?.decimalOdds)?.toFixed(2) ?? null, confidence: number(prediction.confidenceScore) ?? 0, available: prediction.availability === "AVAILABLE", outcome: outcome(prediction.result) }];
   }) : [];
   const oracle = predictions.find((prediction) => prediction.market === "ORACLE_PICK") ?? predictions[0] ?? { predictionId: null, market: "ORACLE_PICK", marketType: null, marketValue: null, selection: "Unavailable", shortSelection: "Unavailable", odds: null, confidence: 0, available: false };
   const streaks = items(root.streaks).flatMap((entry): MatchStreak[] => {

@@ -1,10 +1,16 @@
 export const dynamic = "force-dynamic";
 
 export async function GET(request: Request) {
-  const fixtures = new URL(request.url).searchParams.get("fixtures") ?? "";
-  if (!/^[A-Za-z0-9_-]{22}(,[A-Za-z0-9_-]{22}){0,49}$/.test(fixtures)) return Response.json({ error: { code: "INVALID_LIVE_FIXTURES" } }, { status: 400 });
+  const searchParams = new URL(request.url).searchParams;
+  const fixtures = searchParams.get("fixtures") ?? "";
+  const date = searchParams.get("date") ?? "";
+  const validFixtures = /^[A-Za-z0-9_-]{22}(,[A-Za-z0-9_-]{22}){0,49}$/.test(fixtures);
+  const validDate = /^\d{4}-\d{2}-\d{2}$/.test(date);
+  if (!validFixtures && !validDate) return Response.json({ error: { code: "INVALID_LIVE_SCOPE" } }, { status: 400 });
   const baseUrl = process.env.MYBETORACLE_SERVER_BASE_URL?.replace(/\/$/, ""); if (!baseUrl) return Response.json({ error: { code: "LIVE_CONFIGURATION_ERROR" } }, { status: 503 });
-  const upstream = new URL(`${baseUrl}/api/v3/live/stream`); upstream.searchParams.set("fixtures", fixtures);
+  const upstream = new URL(`${baseUrl}/api/v3/live/stream`);
+  if (validDate) upstream.searchParams.set("date", date);
+  else upstream.searchParams.set("fixtures", fixtures);
   try {
     const response = await fetch(upstream, { headers: { Accept: "text/event-stream" }, cache: "no-store", signal: request.signal });
     if (!response.ok || !response.body) return Response.json({ error: { code: "LIVE_UNAVAILABLE" } }, { status: 503 });

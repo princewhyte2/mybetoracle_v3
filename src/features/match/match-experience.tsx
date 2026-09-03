@@ -106,7 +106,7 @@ function StreakColumn({ team, streaks, locale, copy }: { team: MatchDetailTeam; 
   );
 }
 
-function OraclePanel({ match, copy }: { match: MatchDetail; copy: MatchLabels }) {
+function OraclePanel({ match, copy, outcomes }: { match: MatchDetail; copy: MatchLabels; outcomes: { won: string; lost: string; void: string } }) {
   return (
     <section className={styles.oraclePanel}>
       <header><span><Sparkles size={15} /> {copy.oracleDecision}</span><small>{copy.preMatch}</small></header>
@@ -115,7 +115,7 @@ function OraclePanel({ match, copy }: { match: MatchDetail; copy: MatchLabels })
         <div className={styles.oraclePick}><span>{match.oracleMarket.market}</span><h2>{match.oracleMarket.selection}</h2></div>
         <div className={styles.oracleAction}><span>{copy.referenceOdds}</span><strong>{match.oracleMarket.odds}</strong>{SHOW_MATCH_ADD_TO_PICKS && <button><Plus size={16} /> {copy.myPicks}</button>}</div>
       </div>
-      <div className={styles.predictionGrid}>{match.predictions.map((prediction) => <div key={prediction.market}><span>{prediction.market}</span><strong>{prediction.selection}</strong><small>{prediction.confidence}/100{prediction.odds ? ` · ${prediction.odds}` : ""}</small></div>)}</div>
+      <div className={styles.predictionGrid}>{match.predictions.map((prediction) => <div key={prediction.market} data-outcome={prediction.outcome}><span>{prediction.market}</span><strong>{prediction.selection}</strong><small>{prediction.outcome ? outcomes[prediction.outcome] : `${prediction.confidence}/100${prediction.odds ? ` · ${prediction.odds}` : ""}`}</small></div>)}</div>
       <div className={styles.evidenceStrip}>{match.evidence.map((item) => <span key={item}><Database size={13} /> {item}</span>)}</div>
     </section>
   );
@@ -214,6 +214,7 @@ export function MatchExperience({ match: initialMatch, locale }: { match: MatchD
   const [query, setQuery] = useState("");
   const copy = matchLabels[locale];
   const common = getMessages(locale).common;
+  const outcomes = { won: common.won, lost: common.lost, void: common.void };
   const tabs = tabIds.map((id) => ({ id, label: copy[id] }));
   const sidebarSections: Array<{ label: string; tab: MatchTab }> = [
     { label: copy.overview, tab: "overview" },
@@ -230,9 +231,23 @@ export function MatchExperience({ match: initialMatch, locale }: { match: MatchD
   useEffect(() => {
     const publicId = initialMatch.slug.split("--").at(-1); if (!publicId) return;
     const source = new EventSource(`/api/live?fixtures=${encodeURIComponent(publicId)}`);
-    const update = (event: MessageEvent<string>) => { try { const payload = JSON.parse(event.data) as { fixtureId?: string; statusCode?: string; homeScore?: number | null; awayScore?: number | null; elapsedMinute?: number | null; observedAt?: string }; if (payload.fixtureId !== initialMatch.id) return; setMatch((current) => ({ ...current, statusCode: payload.statusCode ?? current.statusCode, status: payload.statusCode ? statusFromCode(payload.statusCode) : current.status, score: payload.homeScore !== undefined || payload.awayScore !== undefined ? [payload.homeScore ?? null, payload.awayScore ?? null] : current.score, elapsedMinute: payload.elapsedMinute ?? current.elapsedMinute, sourceUpdatedAt: payload.observedAt ?? current.sourceUpdatedAt })); } catch {} };
+    const update = (event: MessageEvent<string>) => { try { const payload = JSON.parse(event.data) as { fixtureId?: string; statusCode?: string; homeScore?: number | null; awayScore?: number | null; elapsedMinute?: number | null; observedAt?: string; predictionResults?: Array<{ predictionId: string; result: "PENDING" | "WON" | "LOST" | "VOID" }> }; if (payload.fixtureId !== initialMatch.id) return; setMatch((current) => {
+      const results = new Map((payload.predictionResults ?? []).map((result) => [result.predictionId, result.result]));
+      const predictions = current.predictions.map((prediction) => {
+        const result = prediction.predictionId ? results.get(prediction.predictionId) : undefined;
+        const outcome = result === "WON" ? "won" : result === "LOST" ? "lost" : result === "VOID" ? "void" : prediction.outcome;
+        return { ...prediction, outcome };
+      });
+      const oracleMarket = predictions.find((prediction) => prediction.market === "ORACLE_PICK") ?? current.oracleMarket;
+      return { ...current, predictions, oracleMarket, statusCode: payload.statusCode ?? current.statusCode, status: payload.statusCode ? statusFromCode(payload.statusCode) : current.status, score: payload.homeScore !== undefined || payload.awayScore !== undefined ? [payload.homeScore ?? null, payload.awayScore ?? null] : current.score, elapsedMinute: payload.elapsedMinute ?? current.elapsedMinute, sourceUpdatedAt: payload.observedAt ?? current.sourceUpdatedAt };
+    });
+      void fetch(`/api/matches/${encodeURIComponent(initialMatch.slug)}?locale=${locale}`, { cache: "no-store" })
+        .then(async (response) => response.ok ? response.json() as Promise<MatchDetail> : null)
+        .then((fresh) => { if (fresh) setMatch(fresh); })
+        .catch(() => {});
+    } catch {} };
     source.addEventListener("fixture_update", update as EventListener); return () => source.close();
-  }, [initialMatch]);
+  }, [initialMatch, locale]);
 
   function navigate(route?: string) { if (route) router.push(`/${locale}/${route}`); }
   function switchLocale(nextLocale: string) { if (locales.includes(nextLocale as Locale)) router.push(`/${nextLocale}/match/${match.slug}`); }
@@ -242,7 +257,7 @@ export function MatchExperience({ match: initialMatch, locale }: { match: MatchD
       <header className={shellStyles.topbar}>
         <div className={shellStyles.topbarInner}>
           <button className={`${shellStyles.brand} ${styles.brandButton}`} onClick={() => navigate("today")} aria-label={`MyBetOracle ${common.today}`}><MboMark className={shellStyles.brandMark} title="MyBetOracle" /><span className={shellStyles.brandName}>MyBetOracle</span></button>
-          <label className={shellStyles.globalSearch}><Search size={18} /><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder={copy.searchPlaceholder} aria-label={copy.searchFootball} /><span>Ctrl K</span></label>
+          <label className={shellStyles.globalSearch}><Search size={18} /><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder={copy.searchPlaceholder} aria-label={copy.searchFootball} /><kbd>Ctrl K</kbd></label>
           <div className={shellStyles.topbarActions}>
             <button className={shellStyles.topIconButton} title={common.notifications} aria-label={common.notifications} onClick={() => navigate("saved")}><Bell size={19} /></button>
             <label className={shellStyles.localeSelect}><Languages size={18} /><select value={locale} onChange={(event) => switchLocale(event.target.value)} aria-label={common.language}>{locales.map((item) => <option value={item} key={item}>{localeNames[item]}</option>)}</select></label>
@@ -269,7 +284,7 @@ export function MatchExperience({ match: initialMatch, locale }: { match: MatchD
             <div className={styles.competitionLine}><span>{match.competition.countryCode}</span><strong>{match.competition.name}</strong>{match.competition.round && <small>{match.competition.round}</small>}<button className={saved ? styles.saved : ""} onClick={() => setSaved((current) => !current)} aria-label={saved ? copy.removeSaved : copy.saveMatch}><Star size={17} fill={saved ? "currentColor" : "none"} /></button></div>
             <div className={styles.scoreMain}>
               <button className={`${styles.scoreTeam} ${styles.scoreTeamButton}`} onClick={() => router.push(`/${locale}/teams/${match.home.id}`)}><Crest team={match.home} large /><h2>{match.home.name}</h2><FormStrip team={match.home} copy={copy} /></button>
-              <div className={styles.kickoffBlock}>{match.score && match.status !== "scheduled" ? <time>{match.score[0] ?? "—"} - {match.score[1] ?? "—"}</time> : <time>{timeFormatter.format(kickoff)}</time>}<span>{dateFormatter.format(kickoff)}</span><small>{match.status === "scheduled" ? copy.scheduled : `${match.statusCode}${match.elapsedMinute !== null ? ` · ${match.elapsedMinute}'` : ""}`}</small></div>
+              <div className={styles.kickoffBlock}>{match.score && match.status !== "scheduled" ? <time>{match.score[0] ?? "—"} - {match.score[1] ?? "—"}</time> : <time>{timeFormatter.format(kickoff)}</time>}<span>{dateFormatter.format(kickoff)}</span><small data-state={match.status}>{match.status === "scheduled" ? copy.scheduled : `${match.statusCode}${match.elapsedMinute !== null ? ` · ${match.elapsedMinute}'` : ""}`}</small></div>
               <button className={`${styles.scoreTeam} ${styles.scoreTeamButton}`} onClick={() => router.push(`/${locale}/teams/${match.away.id}`)}><Crest team={match.away} large /><h2>{match.away.name}</h2><FormStrip team={match.away} copy={copy} /></button>
             </div>
             {(match.venue || match.referee) && <div className={styles.venueLine}>{match.venue && <span><MapPin size={13} /> {match.venue}{match.city ? `, ${match.city}` : ""}</span>}{match.referee && <span><CircleDot size={13} /> {copy.referee}: {match.referee}</span>}</div>}
@@ -279,7 +294,7 @@ export function MatchExperience({ match: initialMatch, locale }: { match: MatchD
 
           <div className={styles.contentStack}>
             {activeTab === "overview" && <TimelineSection match={match} locale={locale} copy={copy} />}
-            {(activeTab === "overview" || activeTab === "oracle") && <OraclePanel match={match} copy={copy} />}
+            {(activeTab === "overview" || activeTab === "oracle") && <OraclePanel match={match} copy={copy} outcomes={outcomes} />}
             {activeTab === "overview" && (match.availability.streaks === "available" && match.streaks.length ? <StreakSection match={match} locale={locale} copy={copy} onOpen={() => navigate(`streaks?teamId=${encodeURIComponent(match.home.id)}`)} /> : <UnavailableSection title={copy.matchStreaks} message={copy.notConfirmed} />)}
             {(activeTab === "overview" || activeTab === "stats") && <StatsSection match={match} locale={locale} copy={copy} />}
             {(activeTab === "overview" || activeTab === "h2h") && <H2HSection match={match} locale={locale} copy={copy} />}

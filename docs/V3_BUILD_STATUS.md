@@ -2,6 +2,23 @@
 
 Last updated: 2026-09-03
 
+Live launch remediation checkpoint — 2026-09-03:
+
+- Today now maintains one date-scoped SSE connection rather than subscribing
+  to only the first 50 loaded fixtures. Score, minute, status, and prediction
+  settlements update from the same canonical DoubleEngine event.
+- Cursor pages load automatically near the end of the rendered feed while the
+  existing button remains as an accessible retry/fallback control.
+- Match Details keeps immediate score updates and performs a no-store refresh
+  only after a fixture event, so timeline, statistics, lineups, standings, H2H,
+  and settled predictions can advance without browser polling.
+- The Match Details hierarchy and readability were strengthened within the
+  approved design system; the oversized shortcut was corrected to the shared
+  `kbd` treatment and explicit Won/Lost/Void states are visible.
+- Significant Next.js decision: the browser-facing SSE and event-refresh
+  handlers remain dynamic Route Handlers. Server-only BFF credentials stay in
+  server modules and are never sent to the client.
+
 Frontend production cutover checkpoint — 2026-09-03:
 
 - The founder approved deployment of the V3 frontend launch candidate.
