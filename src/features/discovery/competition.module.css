@@ -1,0 +1,57 @@
+.content { min-width: 0; color: var(--graphite); }
+.breadcrumb { font-size: 12px; color: var(--muted-text); margin-bottom: 16px; }
+.breadcrumb a { color: var(--heritage-blue); }
+.hero { display: flex; align-items: center; gap: 18px; padding: 16px 0 24px; }
+.hero h1 { font-family: var(--font-sora), sans-serif; font-size: 25px; margin: 4px 0; }
+.hero p { display: flex; align-items: center; gap: 8px; color: var(--muted-text); margin: 0; font-size: 13px; }
+.emblem { object-fit: contain; flex-shrink: 0; }
+.seasons { margin-left: auto; position: relative; font-size: 13px; }
+.seasons summary { cursor: pointer; padding: 12px; border: 1px solid var(--border); border-radius: 6px; }
+.seasons > div { position: absolute; z-index: 2; right: 0; background: var(--white); padding: 8px; border: 1px solid var(--border); max-height: 240px; overflow: auto; min-width: 120px; }
+.seasons a { display: block; padding: 12px; }
+.tabs { display: flex; overflow-x: auto; scrollbar-width: none; border-bottom: 1px solid var(--border); gap: 4px; }
+.tabs a { padding: 14px 16px; white-space: nowrap; font-size: 13px; font-weight: 700; color: var(--muted-text); border-bottom: 3px solid transparent; }
+.tabs a[aria-current] { color: var(--action-blue); border-bottom-color: var(--action-blue); }
+.section { margin-top: 24px; background: var(--white); border: 1px solid var(--border); border-radius: 6px; overflow: hidden; }
+.section h2 { margin: 0; padding: 16px; background: var(--canvas); border-bottom: 1px solid var(--border); font-size: 15px; display: flex; align-items: center; gap: 10px; }
+.section h2 a { margin-left: auto; color: var(--action-blue); font-size: 12px; }
+.section h2 small { color: var(--muted-text); font-weight: 500; }
+.group { margin: 0; padding: 12px 16px; font-size: 13px; background: var(--canvas); }
+.match { display: flex; align-items: center; gap: 20px; padding: 14px 16px; min-height: 76px; color: inherit; }
+.match:hover { background: var(--canvas); }
+.fixture + .fixture { border-top: 1px solid var(--border); }
+.time { display: grid; gap: 5px; width: 125px; flex-shrink: 0; color: var(--muted-text); font-size: 12px; }
+.time span[data-live=true] { color: var(--action-blue); font-weight: 700; }
+.teams { display: grid; gap: 8px; flex: 1; min-width: 0; }
+.teams > div { display: flex; align-items: center; gap: 9px; font-size: 13px; font-weight: 600; }
+.teams strong { margin-left: auto; font-size: 15px; font-variant-numeric: tabular-nums; }
+.teams img { object-fit: contain; flex-shrink: 0; }
+.arrow { color: var(--muted-text); font-size: 22px; }
+.empty { padding: 24px 16px; color: var(--muted-text); font-size: 13px; }
+.tableScroll { overflow-x: auto; }
+.tableScroll table { width: 100%; border-collapse: collapse; font-size: 13px; font-variant-numeric: tabular-nums; }
+.tableScroll td, .tableScroll th { padding: 12px 10px; border-bottom: 1px solid var(--border); text-align: center; white-space: nowrap; }
+.tableScroll thead { color: var(--muted-text); font-size: 12px; }
+.tableScroll th:nth-child(2), .tableScroll th[scope=row] { text-align: left; min-width: 175px; }
+.tableScroll th a { display: flex; align-items: center; gap: 8px; color: inherit; }
+.tableScroll img { object-fit: contain; }
+.form { display: flex; gap: 3px; }
+.form b { display: grid; place-items: center; width: 22px; height: 22px; border-radius: 3px; font-size: 11px; background: var(--canvas); }
+.form b[data-result=W] { background: #e5f4ec; color: #14643b; }
+.form b[data-result=L] { background: #fce9e7; color: #9c3025; }
+.pagination { display: flex; align-items: center; justify-content: center; gap: 20px; padding: 24px 0; font-size: 13px; }
+.pagination a { padding: 12px; color: var(--action-blue); }
+.picks { display: flex; flex-wrap: wrap; gap: 8px; padding: 0 16px 16px; }
+.picks > span { display: grid; align-content: start; gap: 5px; padding: 10px; border: 1px solid var(--border); border-radius: 4px; font-size: 12px; flex: 1 1 140px; }
+.picks small { color: var(--muted-text); }
+@media (max-width: 600px) {
+  .hero { gap: 12px; flex-wrap: wrap; }
+  .hero h1 { font-size: 20px; }
+  .hero > div { flex: 1; }
+  .seasons { margin-left: 0; }
+  .tabs a { padding: 14px 12px; }
+  .match { gap: 12px; padding: 14px 12px; }
+  .time { width: 76px; font-size: 11px; }
+  .section { margin-top: 16px; }
+  .tableScroll td, .tableScroll th { padding: 12px 8px; }
+}

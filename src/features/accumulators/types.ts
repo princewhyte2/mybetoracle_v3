@@ -21,8 +21,8 @@ export type AccumulatorLeg = {
     country: string;
     homeTeam: string;
     awayTeam: string;
-    homeShortName: string;
-    awayShortName: string;
+    homeShortName: string | null;
+    awayShortName: string | null;
     homeColors: [string, string];
     awayColors: [string, string];
     identity?: {

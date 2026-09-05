@@ -72,6 +72,8 @@ function Status({ result }: { result: AccumulatorResult }) {
 function Crest({ leg, side }: { leg: AccumulatorLeg; side: "home" | "away" }) {
   const shortName =
     side === "home" ? leg.fixture.homeShortName : leg.fixture.awayShortName;
+  const teamName =
+    side === "home" ? leg.fixture.homeTeam : leg.fixture.awayTeam;
   const colors =
     side === "home" ? leg.fixture.homeColors : leg.fixture.awayColors;
   return (
@@ -84,7 +86,7 @@ function Crest({ leg, side }: { leg: AccumulatorLeg; side: "home" | "away" }) {
         } as React.CSSProperties
       }
     >
-      {shortName.slice(0, 2)}
+      {(shortName || teamName).slice(0, 2).toUpperCase()}
     </span>
   );
 }

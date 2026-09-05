@@ -1,6 +1,19 @@
 # MyBetOracle V3 Build Status
 
-Last updated: 2026-09-03
+Last updated: 2026-09-05
+
+Competition-season release checkpoint — 2026-09-05:
+
+- See `docs/COMPETITION_SEASON_INTEGRATION.md` for the approved integration,
+  verified real-data evidence and exact release status.
+- Competition overview, fixtures, results, grouped standings and predictions
+  now use a dedicated season-scoped BFF read instead of the first Today page.
+- Real Premier League check: 380 fixtures, 20 standings teams, all six locales.
+  TypeScript, focused lint, localization verification and production build pass.
+- DoubleEngine `35b90f9` and BFF `f77b9d8` are pushed; founder confirms deployment
+  in progress. Verify both live contracts before the dependent frontend push.
+- Prior approved pending fixes preserve nullable Oracle Daily team abbreviations,
+  correct its auth route, and hide Today controls that have no working action.
 
 Live launch remediation checkpoint — 2026-09-03:
 

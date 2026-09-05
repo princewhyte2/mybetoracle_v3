@@ -10,6 +10,8 @@
 .shell {
   grid-template-columns: 190px minmax(560px, 1fr) 260px;
 }
+.entityShell { grid-template-columns: 190px minmax(0, 1fr); }
+@media (max-width: 900px) { .entityShell { grid-template-columns: minmax(0, 1fr); } }
 .main {
   display: grid;
   align-content: start;

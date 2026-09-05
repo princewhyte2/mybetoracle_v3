@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import {
@@ -692,12 +692,16 @@ export function DiscoveryExperience({
   view,
   section,
   slug,
+  children,
+  entityQuery,
 }: {
   locale: Locale;
   data: DiscoveryData;
   view: DiscoveryView;
   section?: DiscoverySection;
   slug?: string;
+  children?: ReactNode;
+  entityQuery?: string;
 }) {
   const router = useRouter();
   const [menuOpen, setMenuOpen] = useState(false);
@@ -797,7 +801,7 @@ export function DiscoveryExperience({
             <MboMark className={shellStyles.brandMark} title="MyBetOracle" />
             <span className={shellStyles.brandName}>MyBetOracle</span>
           </button>
-          <label className={shellStyles.globalSearch}>
+          {children ? <button className={shellStyles.globalSearch} onClick={() => router.push(`/${locale}/explore`)}><Search size={18} /><span>{copy.search}</span></button> : <label className={shellStyles.globalSearch}>
             <Search size={18} />
             <input
               value={query}
@@ -808,8 +812,8 @@ export function DiscoveryExperience({
               }}
               placeholder={copy.search}
             />
-            <span>Ctrl K</span>
-          </label>
+            <kbd>Ctrl K</kbd>
+          </label>}
           <div className={shellStyles.topbarActions}>
             <button
               className={shellStyles.topIconButton}
@@ -824,7 +828,7 @@ export function DiscoveryExperience({
                 value={locale}
                 onChange={(e) =>
                   router.push(
-                    `/${e.target.value}/${view === "directory" ? section : view}${slug ? `/${slug}` : ""}`,
+                    `/${e.target.value}/${view === "directory" ? section : view === "competition" ? "competitions" : view === "team" ? "teams" : view}${slug ? `/${slug}` : ""}${entityQuery ? `?${entityQuery}` : ""}`,
                   )
                 }
               >
@@ -858,7 +862,7 @@ export function DiscoveryExperience({
           onNavigate={() => setMenuOpen(false)}
         />
       )}
-      <div className={`${shellStyles.shell} ${styles.shell}`}>
+      <div className={`${shellStyles.shell} ${styles.shell} ${children ? styles.entityShell : ''}`}>
         <aside className={shellStyles.sidebar}>
           <nav className={shellStyles.primaryNav}>
             {navItems.map(({ label, icon: Icon, route }) => (
@@ -926,6 +930,7 @@ export function DiscoveryExperience({
               )}
             </header>
           )}
+          {children}
           {view === "explore" && <ExploreHome locale={locale} data={visibleData} />}{" "}
           {view === "calendar" && <CalendarView locale={locale} data={visibleData} />}{" "}
           {view === "directory" && (
@@ -938,7 +943,7 @@ export function DiscoveryExperience({
           {(
             ["competition", "team", "country", "market"] as DiscoveryView[]
           ).includes(view) &&
-            slug && (
+            slug && !children && (
               <Detail
                 view={view as "competition" | "team" | "country" | "market"}
                 slug={slug}
@@ -947,7 +952,7 @@ export function DiscoveryExperience({
               />
             )}
         </main>
-        <aside className={`${shellStyles.intelligenceRail} ${styles.rail}`}>
+        {!children && <aside className={`${shellStyles.intelligenceRail} ${styles.rail}`}>
           <section>
             <header>
               <span>{copy.coverageNow}</span>
@@ -992,7 +997,7 @@ export function DiscoveryExperience({
               </button>
             ))}
           </section>
-        </aside>
+        </aside>}
       </div>
       <nav className={shellStyles.mobileBottomNav}>
         {navItems.slice(0, 5).map(({ label, icon: Icon, route }) => (

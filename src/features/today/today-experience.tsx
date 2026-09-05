@@ -67,6 +67,11 @@ function mergeTodayFeed(current: TodayData, next: TodayData): TodayData {
 // Launch presentation only. Keep the existing pick-selection workflow intact
 // so it can be restored when the product flow is ready for review.
 const SHOW_TODAY_ADD_TO_PICKS = false;
+// Preserve these launch surfaces until their production contracts are connected.
+// Keeping them out of the UI prevents dead controls and non-canonical directory links.
+const SHOW_TODAY_STANDINGS = false;
+const SHOW_TODAY_SORT = false;
+const SHOW_TODAY_COMPETITION_FOLLOWING = false;
 
 const marketOptions = [
   { value: "best", label: "oracleBest", title: "oracleBestHelp" },
@@ -278,7 +283,7 @@ function CompetitionBlock({
           <strong>{competition.name}</strong>
           <ChevronDown className={collapsed ? styles.chevronCollapsed : ""} size={17} />
         </button>
-        <button className={styles.textButton}>{copy.standings}</button>
+        {SHOW_TODAY_STANDINGS && <button className={styles.textButton}>{copy.standings}</button>}
       </header>
       {!collapsed && (
         <div>
@@ -618,7 +623,7 @@ export function TodayExperience({ data, locale }: { data: TodayData; locale: Loc
             ))}
           </nav>
 
-          <div className={styles.sidebarSection}>
+          {SHOW_TODAY_COMPETITION_FOLLOWING && <div className={styles.sidebarSection}>
             <div className={styles.sidebarHeading}>
               <span>{copy.following}</span>
               <button title={copy.manageFollowing} aria-label={copy.manageFollowing}><Plus size={16} /></button>
@@ -630,7 +635,7 @@ export function TodayExperience({ data, locale }: { data: TodayData; locale: Loc
                 <small>{count}</small>
               </button>
             ))}
-          </div>
+          </div>}
 
           <div className={styles.sidebarFooter}>
             <button onClick={() => navigate("competitions")}><Globe2 size={17} /> {common.allCompetitions}</button>
@@ -697,13 +702,13 @@ export function TodayExperience({ data, locale }: { data: TodayData; locale: Loc
                 ["live", copy.live],
                 ["oracle", copy.oracle80],
                 ["following", copy.following],
-              ] as const).map(([value, label]) => (
+              ] as const).filter(([value]) => SHOW_TODAY_COMPETITION_FOLLOWING || value !== "following").map(([value, label]) => (
                 <button key={value} onClick={() => void selectFilter(value)} className={filter === value ? styles.filterActive : ""} role="tab" aria-selected={filter === value}>
                   {value === "live" && <span className={styles.liveDot} />}{label}
                 </button>
               ))}
             </div>
-            <button className={styles.sortButton}><ListFilter size={17} /> {copy.sort}</button>
+            {SHOW_TODAY_SORT && <button className={styles.sortButton}><ListFilter size={17} /> {copy.sort}</button>}
           </section>
 
           <section className={styles.marketLens} aria-label={copy.predictionMarket}>

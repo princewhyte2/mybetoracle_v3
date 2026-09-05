@@ -1,8 +1,2 @@
-import { notFound, permanentRedirect } from "next/navigation";
-import { DiscoveryExperience } from "@/features/discovery/discovery-experience";
-import { discoveryEntityAlternates, resolveDiscoveryEntity } from "@/features/discovery/entity-resolution";
-import { discoveryMetadata } from "@/features/discovery/metadata";
-import { discoveryLabels, interpolateDiscovery } from "@/features/discovery/labels";
-import { isLocale } from "@/i18n/config";
-export async function generateMetadata({params}:PageProps<"/[locale]/competitions/[competitionSlug]">){const {locale,competitionSlug}=await params;if(!isLocale(locale))notFound();const resolved=await resolveDiscoveryEntity(locale,"competition",competitionSlug);if(!resolved)return {robots:{index:false,follow:false}};const c=discoveryLabels[locale];const metadata=discoveryMetadata(locale,`competitions/${resolved.entity.slug}`,`${resolved.entity.name} · ${c.predictions} · ${c.fixtures}`,interpolateDiscovery(c.genericEntityDescription,resolved.entity.name));return {...metadata,alternates:{canonical:`/${locale}/competitions/${resolved.entity.slug}`,languages:await discoveryEntityAlternates("competition",competitionSlug)}}}
-export default async function Page({params}:PageProps<"/[locale]/competitions/[competitionSlug]">){const {locale,competitionSlug}=await params;if(!isLocale(locale))notFound();const resolved=await resolveDiscoveryEntity(locale,"competition",competitionSlug);if(!resolved)notFound();if(competitionSlug!==resolved.entity.slug)permanentRedirect(`/${locale}/competitions/${resolved.entity.slug}`);return <DiscoveryExperience locale={locale} data={resolved.data} view="competition" slug={resolved.entity.slug}/>}
+export { default, generateMetadata } from '@/features/discovery/competition-page';
+export const dynamic = 'force-dynamic';
