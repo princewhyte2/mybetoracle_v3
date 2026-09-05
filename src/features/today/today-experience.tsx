@@ -214,8 +214,8 @@ function MatchRow({
         <strong>{market.shortSelection}</strong>
       </button>
 
-      <button className={styles.scorePreview} onClick={onSelect} title={interpolate(copy.oracleScore, { score: match.oracleScore })}>
-        <OracleGauge score={match.oracleScore} compact />
+      <button className={styles.scorePreview} onClick={onSelect} title={interpolate(copy.oracleScore, { score: market.confidence })}>
+        <OracleGauge score={market.confidence} compact />
       </button>
 
       <div className={styles.rowActions}>
@@ -810,8 +810,8 @@ export function TodayExperience({ data, locale }: { data: TodayData; locale: Loc
               <div className={styles.fixtureTime}><Clock3 size={14} /> {selectedMatch.kickoff}</div>
             </div>
             <div className={styles.oracleDecision}>
-              <div className={styles.oracleScoreMetric} title={interpolate(copy.oracleScore, { score: selectedMatch.oracleScore })}>
-                <OracleGauge score={selectedMatch.oracleScore} />
+              <div className={styles.oracleScoreMetric} title={interpolate(copy.oracleScore, { score: selectedMarket.confidence })}>
+                <OracleGauge score={selectedMarket.confidence} />
               </div>
               <div>
                 <h2>{selectedMarket.selection}</h2>

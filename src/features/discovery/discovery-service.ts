@@ -188,9 +188,9 @@ export async function getDiscoveryData({
   date?: string;
 }): Promise<DiscoveryData> {
   const [countryCatalog, competitionCatalog, teamCatalog, marketCatalog, today] = await Promise.all([
-    allCatalog<CatalogCountry>("countries", locale, 3),
-    allCatalog<CatalogCompetition>("competitions", locale, 5),
-    allCatalog<CatalogTeam>("teams", locale, 2),
+    allCatalog<CatalogCountry>("countries", locale, 1),
+    allCatalog<CatalogCompetition>("competitions", locale, 1),
+    allCatalog<CatalogTeam>("teams", locale, 1),
     allCatalog<CatalogMarket>("markets", locale, 1),
     getTodayData({ date, locale }),
   ]);

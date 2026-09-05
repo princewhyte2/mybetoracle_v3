@@ -16,13 +16,10 @@ import {
   Globe2,
   History,
   Home,
-  Info,
   Languages,
-  LockKeyhole,
   Menu,
   ReceiptText,
   Search,
-  Share2,
   ShieldCheck,
   Trophy,
   UserCircle,
@@ -81,7 +78,7 @@ function LegRow({ leg, locale, showDate, labels }: { leg: AccumulatorLeg; locale
         </div>
         <div className={styles.selectionCell}><span>{labels.selection}</span><strong>{leg.selectionLabel}</strong><small>{labels.quality}: {leg.prediction.qualityTier}</small></div>
         <div className={styles.legEvidence} title={labels.confidenceTitle}><span>{labels.confidence}</span><strong>{leg.prediction.confidenceScore}</strong></div>
-        <div className={styles.legOdds}><span>{labels.frozenOdds}</span><strong>{leg.decimalOdds.toFixed(2)}</strong><small>{leg.oddsSnapshot.bookmaker}</small></div>
+        <div className={styles.legOdds}><span>{labels.odds}</span><strong>{leg.decimalOdds.toFixed(2)}</strong></div>
         <ResultBadge result={leg.result} locale={locale} compact />
         <button className={styles.legOpen} disabled title={labels.unavailable} aria-label={labels.openMatch.replace("{home}",home.name).replace("{away}",away.name)}><ChevronRight size={16} /></button>
       </article>
@@ -100,7 +97,6 @@ function Summary({ accumulator, labels, locale }: { accumulator: Accumulator; la
         <div className={styles.confidenceMetric}><span>{labels.averageConfidence}</span><strong>{accumulator.averageConfidence}</strong><small>{labels.arithmeticAverage}</small></div>
         <div className={styles.summaryStatus}><ResultBadge result={accumulator.result} locale={locale}/><span>{labels.published} {published.toLocaleDateString(localeTags[locale], { day: "numeric", month: "short", timeZone: accumulator.timezone })}, {published.toLocaleTimeString(localeTags[locale], { hour: "2-digit", minute: "2-digit", timeZone: accumulator.timezone })}</span></div>
       </div>
-      <footer><span><LockKeyhole size={14} /> {labels.locked} / SportyBet</span><div><button disabled title={labels.unavailable} aria-label={labels.saveAcca}><Bookmark size={15} /></button><button disabled title={labels.unavailable} aria-label={labels.shareAcca}><Share2 size={15} /></button></div></footer>
     </section>
   );
 }
@@ -120,22 +116,6 @@ function HistoryDrawer({ history, onClose, locale }: { history: AccumulatorHisto
   );
 }
 
-function MethodDrawer({ onClose, locale }: { onClose: () => void; locale: Locale }) {
-  const labels=getLabels(locale);
-  return (
-    <aside className={styles.drawer} aria-label={labels.selectionMethod}>
-      <header><div><span>DoubleEngine</span><h2>{labels.selectionMethod}</h2></div><button onClick={onClose} aria-label={labels.closeMethod}><X size={19} /></button></header>
-      <div className={styles.methodList}>
-        <div><strong>1</strong><span><b>{labels.eligibilityTitle}</b><small>{labels.eligibilityText}</small></span></div>
-        <div><strong>2</strong><span><b>{labels.verifiedOddsTitle}</b><small>{labels.verifiedOddsText}</small></span></div>
-        <div><strong>3</strong><span><b>{labels.optimizationTitle}</b><small>{labels.optimizationText}</small></span></div>
-        <div><strong>4</strong><span><b>{labels.immutableTitle}</b><small>{labels.immutableText}</small></span></div>
-      </div>
-      <div className={styles.methodNotice}><Info size={17} /><p>{labels.methodNotice}</p></div>
-    </aside>
-  );
-}
-
 export function MultiPicksExperience({ daily, weekly, locale }: { daily: AccumulatorPageData; weekly: AccumulatorPageData; locale: Locale }) {
   const router = useRouter();
   const labels = getLabels(locale);
@@ -145,7 +125,6 @@ export function MultiPicksExperience({ daily, weekly, locale }: { daily: Accumul
   const [variant, setVariant] = useState(1);
   const [query, setQuery] = useState("");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [methodOpen, setMethodOpen] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
   const data = scope === "DAILY" ? daily : weekly;
   const normalizedQuery = query.trim().toLocaleLowerCase(localeTags[locale]);
@@ -161,14 +140,14 @@ export function MultiPicksExperience({ daily, weekly, locale }: { daily: Accumul
 
   return (
     <div className={`${shellStyles.app} ${styles.app}`}>
-      <header className={shellStyles.topbar}><div className={shellStyles.topbarInner}><button className={`${shellStyles.brand} ${styles.brandButton}`} onClick={() => navigate("today")} aria-label={`MyBetOracle ${common.today}`}><MboMark className={shellStyles.brandMark} title="MyBetOracle" /><span className={shellStyles.brandName}>MyBetOracle</span></button><label className={shellStyles.globalSearch}><Search size={18} /><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder={labels.searchPlaceholder} /><span>Ctrl K</span></label><div className={shellStyles.topbarActions}><button className={shellStyles.topIconButton} aria-label={common.notifications} onClick={() => navigate("saved")}><Bell size={19} /></button><label className={shellStyles.localeSelect}><Languages size={18} /><select value={locale} onChange={(event) => switchLocale(event.target.value)} aria-label={common.language}>{locales.map((item) => <option value={item} key={item}>{localeNames[item]}</option>)}</select></label><button className={shellStyles.avatarButton} aria-label={common.profile} onClick={() => navigate("profile")}><UserCircle size={24} /></button><button className={shellStyles.mobileMenuButton} onClick={() => setMobileMenuOpen((current) => !current)} aria-label={common.openNavigation}>{mobileMenuOpen ? <X size={22} /> : <Menu size={22} />}</button></div></div></header>
+      <header className={shellStyles.topbar}><div className={shellStyles.topbarInner}><button className={`${shellStyles.brand} ${styles.brandButton}`} onClick={() => navigate("today")} aria-label={`MyBetOracle ${common.today}`}><MboMark className={shellStyles.brandMark} title="MyBetOracle" /><span className={shellStyles.brandName}>MyBetOracle</span></button><label className={shellStyles.globalSearch}><Search size={18} /><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder={labels.searchPlaceholder} /><kbd>Ctrl K</kbd></label><div className={shellStyles.topbarActions}><button className={shellStyles.topIconButton} aria-label={common.notifications} onClick={() => navigate("saved")}><Bell size={19} /></button><label className={shellStyles.localeSelect}><Languages size={18} /><select value={locale} onChange={(event) => switchLocale(event.target.value)} aria-label={common.language}>{locales.map((item) => <option value={item} key={item}>{localeNames[item]}</option>)}</select></label><button className={shellStyles.avatarButton} aria-label={common.profile} onClick={() => navigate("profile")}><UserCircle size={24} /></button><button className={shellStyles.mobileMenuButton} onClick={() => setMobileMenuOpen((current) => !current)} aria-label={common.openNavigation}>{mobileMenuOpen ? <X size={22} /> : <Menu size={22} />}</button></div></div></header>
       {mobileMenuOpen && <MobileProductMenu locale={locale} activeRoute="multi-picks" onNavigate={() => setMobileMenuOpen(false)} />}
 
       <div className={shellStyles.shell}>
         <aside className={shellStyles.sidebar}><nav className={shellStyles.primaryNav} aria-label={common.primaryNavigation}>{navItems.map(({ key, icon: Icon, route }) => <button key={key} className={key === "accas" ? shellStyles.navActive : ""} onClick={() => navigate(route)}><Icon size={19} /><span>{common[key]}</span></button>)}</nav><div className={shellStyles.sidebarSection}><div className={shellStyles.sidebarHeading}><span>{labels.sectionTitle}</span></div><button className={`${styles.toolLink} ${styles.toolLinkActive}`}>{labels.publishedAccas}<ChevronRight size={14} /></button><button className={styles.toolLink} onClick={() => navigate("multi-picks/builder")}>{labels.buildMyAcca}<ChevronRight size={14} /></button><button className={styles.toolLink} onClick={() => navigate("pick-analyzer")}>{labels.pickAnalyzer}<ChevronRight size={14} /></button></div><div className={shellStyles.sidebarFooter}><button onClick={() => navigate("competitions")}><Globe2 size={17} /> {common.allCompetitions}</button><button onClick={() => navigate("responsible-play")}><ShieldCheck size={17} /> {common.responsiblePlay}</button></div></aside>
 
         <main className={`${shellStyles.main} ${styles.main}`}>
-          <div className={styles.pageHeader}><div><span>{labels.eyebrow}</span><h1>{labels.title}</h1><p>{labels.subtitle}</p></div><div><button disabled={data.history.length === 0} title={data.history.length === 0 ? labels.unavailable : undefined} onClick={() => setHistoryOpen(true)}><History size={16} /> {labels.history}</button><button onClick={() => setMethodOpen(true)}><Info size={16} /> {labels.method}</button></div></div>
+          <div className={styles.pageHeader}><div><span>{labels.eyebrow}</span><h1>{labels.title}</h1></div>{data.history.length > 0 && <div><button onClick={() => setHistoryOpen(true)}><History size={16} /> {labels.history}</button></div>}</div>
 
           <section className={styles.periodBar}>
             <div className={styles.scopeSwitch}><button className={scope === "DAILY" ? styles.scopeActive : ""} onClick={() => changeScope("DAILY")}>{labels.daily}</button><button className={scope === "WEEKLY" ? styles.scopeActive : ""} onClick={() => changeScope("WEEKLY")}>{labels.weekly}</button></div>
@@ -181,7 +160,7 @@ export function MultiPicksExperience({ daily, weekly, locale }: { daily: Accumul
             <>
               <nav className={styles.variantTabs} aria-label={labels.accaOptions}>{variants.map((item) => <button key={item.id} className={selected.id === item.id ? styles.variantActive : ""} onClick={() => setVariant(item.variant)}>{labels.option} {item.variant}<span>{item.totalOdds.toFixed(2)}</span></button>)}</nav>
               <Summary accumulator={selected} labels={labels} locale={locale} />
-              <section className={styles.legsSection}><header><div><h2>{labels.selection}</h2><span>{selected.legs.length} {labels.frozenSelections}</span></div><small><LockKeyhole size={13} /> {labels.oddsSnapshot}</small></header><div>{selected.legs.map((item, index) => { const previous = selected.legs[index - 1]; const showDate = scope === "WEEKLY" && (!previous || new Date(previous.fixture.kickoffAt).toDateString() !== new Date(item.fixture.kickoffAt).toDateString()); return <LegRow key={item.id} leg={item} locale={locale} labels={labels} showDate={showDate} />; })}</div></section>
+              <section className={styles.legsSection}><header><div><h2>{labels.selection}</h2><span>{selected.legs.length} {labels.selections}</span></div></header><div>{selected.legs.map((item, index) => { const previous = selected.legs[index - 1]; const showDate = scope === "WEEKLY" && (!previous || new Date(previous.fixture.kickoffAt).toDateString() !== new Date(item.fixture.kickoffAt).toDateString()); return <LegRow key={item.id} leg={item} locale={locale} labels={labels} showDate={showDate} />; })}</div></section>
             </>
           ) : (
             <section className={styles.emptyState}><Database size={23} /><h2>{(scope === "DAILY" ? labels.noQualifyingToday : labels.noQualifyingWeek).replace("{band}",data.bands.find((item) => item.key === band)?.label ?? "")}</h2><p>{labels.emptyExplanation}</p><button disabled={!data.bands.some((item) => data.items.some((entry) => entry.targetBand === item.key))} onClick={() => { const available = data.bands.find((item) => data.items.some((entry) => entry.targetBand === item.key)); if (available) setBand(available.key); }}>{labels.lowerOdds}</button></section>
@@ -189,15 +168,13 @@ export function MultiPicksExperience({ daily, weekly, locale }: { daily: Accumul
         </main>
 
         <aside className={`${shellStyles.intelligenceRail} ${styles.intelligenceRail}`}>
-          <section className={styles.railPanel}><header><span>{labels.publicationStandard}</span><LockKeyhole size={15} /></header><dl><div><dt>{labels.bookmaker}</dt><dd>SportyBet</dd></div><div><dt>{labels.odds}</dt><dd>{labels.frozenAtPublication}</dd></div><div><dt>{labels.minimumConfidence}</dt><dd>{labels.perSelection}</dd></div><div><dt>{labels.marketGroup}</dt><dd>{labels.mixedOnly}</dd></div></dl></section>
           <section className={styles.railPanel}><header><span>{labels.recentResults}</span><Trophy size={15} /></header><div className={styles.recentResults}>{data.history.map((item) => <button key={item.id} onClick={() => setHistoryOpen(true)}><span><strong>{item.targetLabel} / {labels.option} {item.variant}</strong><small>{item.scope === "DAILY" ? labels.daily : labels.weekly} / {item.totalOdds.toFixed(2)}</small></span><ResultBadge result={item.result} locale={locale} compact /></button>)}</div><button className={styles.railAction} disabled={data.history.length === 0} title={data.history.length === 0 ? labels.unavailable : undefined} onClick={() => setHistoryOpen(true)}>{labels.completeHistory} <ChevronRight size={15} /></button></section>
           <section className={`${styles.railPanel} ${styles.uncertaintyPanel}`}><header><span>{labels.responsibleUncertainty}</span><ShieldCheck size={15} /></header><p>{labels.uncertaintyCopy}</p></section>
         </aside>
       </div>
 
       <nav className={shellStyles.mobileBottomNav} aria-label={common.mobileNavigation}>{navItems.slice(0, 5).map(({ key, icon: Icon, route }) => <button key={key} className={key === "accas" ? shellStyles.mobileNavActive : ""} onClick={() => navigate(route)}><Icon size={19} /><span>{common[key]}</span></button>)}</nav>
-      {(methodOpen || historyOpen) && <button className={styles.drawerScrim} onClick={() => { setMethodOpen(false); setHistoryOpen(false); }} aria-label={labels.closePanel} />}
-      {methodOpen && <MethodDrawer onClose={() => setMethodOpen(false)} locale={locale}/>}
+      {historyOpen && <button className={styles.drawerScrim} onClick={() => setHistoryOpen(false)} aria-label={labels.closePanel} />}
       {historyOpen && <HistoryDrawer history={data.history} onClose={() => setHistoryOpen(false)} locale={locale} />}
     </div>
   );
