@@ -10,8 +10,10 @@ Competition-season release checkpoint — 2026-09-05:
   now use a dedicated season-scoped BFF read instead of the first Today page.
 - Real Premier League check: 380 fixtures, 20 standings teams, all six locales.
   TypeScript, focused lint, localization verification and production build pass.
-- DoubleEngine `35b90f9` and BFF `f77b9d8` are pushed; founder confirms deployment
-  in progress. Verify both live contracts before the dependent frontend push.
+- DoubleEngine `35b90f9` and BFF `f77b9d8` are pushed and production BFF checks
+  pass for all five views / six locales, including real standings and auth/404s.
+- Frontend implementation `e81f5fe` is ready for the dependent main push;
+  verify the public frontend after Coolify completes that deployment.
 - Prior approved pending fixes preserve nullable Oracle Daily team abbreviations,
   correct its auth route, and hide Today controls that have no working action.
 

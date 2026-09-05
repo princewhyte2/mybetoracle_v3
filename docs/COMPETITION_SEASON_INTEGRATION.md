@@ -21,8 +21,13 @@ Release order: DoubleEngine main, verify live contract; V3 backend
 release/mybetoracle-v3-api, verify live adaptation; then this frontend main.
 Production build passed (Next.js 16.3, 137 static routes; competition pages
 remain request-driven). Backend pushes: DoubleEngine `35b90f9`, BFF `f77b9d8`.
-Founder confirmed both Coolify deployments in progress; remote contract checks
-and the dependent frontend push remain the next release action.
+Both backend deployments verified through `https://api.mybetoracle.com`:
+all six locales returned the real 20-team standings, fixtures/results/predictions
+returned 200, missing/foreign IDs returned 404 and unsigned reads returned 401.
+The production BFF successfully authenticates to production DoubleEngine; local
+operator credentials are not used as evidence of that server-to-server link.
+Frontend implementation commit: `e81f5fe`; release documentation accompanies its
+push. Verify the public frontend after Coolify deploys this commit range.
 Other competitions populate progressively through the background season sweep;
 API-Football coverage still governs tables. No fabricated standings or fixtures.
 Team detail enrichment and player statistics are separate follow-up work.
