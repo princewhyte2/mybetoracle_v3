@@ -1,7 +1,8 @@
+import { FeedRetry } from "@/features/accumulators/feed-retry";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { ResultsHubExperience } from "@/features/performance/results-hub-experience";
-import { daysBefore, getResultsData, lagosResultsDate, ResultsFeedError } from "@/features/performance/results-service";
+import { daysBefore, getResultsData, lagosResultsDate } from "@/features/performance/results-service";
 import { marketGroups, type MarketGroup, type SettledResult } from "@/features/performance/types";
 import { isLocale, locales } from "@/i18n/config";
 import { resultsLabels } from "@/features/performance/results-labels";
@@ -27,14 +28,14 @@ export default async function ResultsPage({ params, searchParams }: PageProps<"/
   const result = typeof query.result === "string" && ["WON", "LOST", "VOID"].includes(query.result) ? query.result as SettledResult : undefined;
   const page = Math.max(1, Number.parseInt(typeof query.page === "string" ? query.page : "1", 10) || 1);
   const to = lagosResultsDate();
+  const accumulatorPage = Math.min(10000, Math.max(1, Number.parseInt(String(query.accumulatorPage),10) || 1));
+  const accumulatorScope = query.accumulatorScope === 'DAILY' || query.accumulatorScope === 'WEEKLY' ? query.accumulatorScope : undefined;
+  const accumulatorResult = typeof query.accumulatorResult === 'string' && ['WON','LOST','VOID'].includes(query.accumulatorResult) ? query.accumulatorResult as SettledResult : undefined;
   let payload: Awaited<ReturnType<typeof getResultsData>> | null = null;
-  let errorCode: string | null = null;
   try {
-    payload = await getResultsData({ locale, from: daysBefore(to, period), to, market, result, page, pageSize: 50 });
-  } catch (error) {
-    errorCode = error instanceof ResultsFeedError ? error.code : "RESULTS_SERVICE_UNAVAILABLE";
-  }
-  if (payload) return <ResultsHubExperience locale={locale} predictions={payload.predictions} performance={payload.performance} accumulators={[]} />;
+    payload = await getResultsData({ locale, from: daysBefore(to, period), to, market, result, page, pageSize: 50, accumulatorPage, accumulatorScope, accumulatorResult });
+  } catch { /* The retry state does not expose internal service errors. */ }
+  if (payload) return <ResultsHubExperience locale={locale} predictions={payload.predictions} performance={payload.performance} accumulators={payload.accumulators} />;
   const copy = withMultiPickTerminology(resultsLabels[locale], locale, "results");
-  return <main style={{minHeight:"70vh",display:"grid",placeItems:"center",padding:"2rem"}}><section style={{maxWidth:560,textAlign:"center"}}><span>MyBetOracle</span><h1>{copy.title}</h1><p>{copy.subtitle}</p><small>{errorCode}</small></section></main>;
+  return <FeedRetry locale={locale} title={copy.title} href={`/${locale}/results?period=${period}`} />;
 }

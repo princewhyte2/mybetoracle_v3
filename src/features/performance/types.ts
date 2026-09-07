@@ -42,6 +42,9 @@ export type AccumulatorPerformance = PerformanceBreakdown & {
 };
 
 export type PerformanceData = {
+  accumulatorPagination?: { page:number; pageSize:number; total:number; totalPages:number };
+  accumulatorScope?: 'DAILY' | 'WEEKLY';
+  accumulatorResult?: SettledResult;
   asOf: string;
   periodDays: number;
   methodologyVersion: string;
@@ -86,8 +89,8 @@ export type SettledAccumulatorLeg = {
   awayTeam: string;
   selection: string;
   odds: number;
-  finalScore: [number, number];
-  result: SettledResult;
+  finalScore: [number | null, number | null];
+  result: SettledResult | 'PENDING';
 };
 
 export type SettledAccumulator = {

@@ -1,6 +1,7 @@
+import { FeedRetry } from "@/features/accumulators/feed-retry";
 import { notFound } from "next/navigation";
 import { MultiPicksExperience } from "@/features/accumulators/multi-picks-experience";
-import { getMultiPicksData, lagosProductDate, MultiPicksFeedError } from "@/features/accumulators/multi-picks-service";
+import { getMultiPicksData, lagosProductDate } from "@/features/accumulators/multi-picks-service";
 import { isLocale, locales } from "@/i18n/config";
 import { localizedAccumulatorLabels } from "@/features/accumulators/localized-labels";
 import { localizedMetadata } from "@/i18n/localized-metadata";
@@ -24,10 +25,8 @@ export default async function MultiPicksPage({ params, searchParams }: PageProps
   const date = isCalendarDate(requestedDate) ? requestedDate : lagosProductDate();
   let data;
   try { data = await getMultiPicksData({ date, locale }); }
-  catch (error) {
-    const code = error instanceof MultiPicksFeedError ? error.code : "MULTI_PICKS_SERVICE_UNAVAILABLE";
-    const copy = localizedAccumulatorLabels[locale];
-    return <main style={{minHeight:"70vh",display:"grid",placeItems:"center",padding:"2rem"}}><section style={{maxWidth:560,textAlign:"center"}}><span>MyBetOracle</span><h1>{copy.title}</h1><p>{copy.subtitle}</p><small>{code}</small></section></main>;
+  catch {
+    return <FeedRetry locale={locale} title={localizedAccumulatorLabels[locale].title} href={`/${locale}/multi-picks?date=${date}`} />;
   }
   const { daily, weekly } = data;
 

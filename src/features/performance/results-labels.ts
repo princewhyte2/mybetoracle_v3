@@ -1,6 +1,7 @@
 import type { Locale } from "@/i18n/config";
 
 type ResultsLabels = {
+  noAccas: string;
   search: string;
   searchPredictions: string;
   predictions: string;
@@ -50,6 +51,7 @@ type ResultsLabels = {
 
 export const resultsLabels: Record<Locale, ResultsLabels> = {
   en: {
+    noAccas: "No settled Multi-Picks in this period.",
     search: "Search results",
     searchPredictions: "Search prediction results",
     predictions: "Predictions",
@@ -99,6 +101,7 @@ export const resultsLabels: Record<Locale, ResultsLabels> = {
     oddsNotRecorded: "Publication odds not recorded",
   },
   es: {
+    noAccas: "No hay Multi-Picks finalizados en este período.",
     search: "Buscar resultados",
     searchPredictions: "Buscar resultados de pronósticos",
     predictions: "Pronósticos",
@@ -149,6 +152,7 @@ export const resultsLabels: Record<Locale, ResultsLabels> = {
     oddsNotRecorded: "Cuota de publicación no registrada",
   },
   fr: {
+    noAccas: "Aucun Multi-Pick terminé sur cette période.",
     search: "Rechercher dans les résultats",
     searchPredictions: "Rechercher des résultats de pronostics",
     predictions: "Pronostics",
@@ -198,6 +202,7 @@ export const resultsLabels: Record<Locale, ResultsLabels> = {
     oddsNotRecorded: "Cote de publication non enregistrée",
   },
   de: {
+    noAccas: "Keine abgeschlossenen Multi-Picks in diesem Zeitraum.",
     search: "Ergebnisse suchen",
     searchPredictions: "Prognoseergebnisse suchen",
     predictions: "Prognosen",
@@ -248,6 +253,7 @@ export const resultsLabels: Record<Locale, ResultsLabels> = {
     oddsNotRecorded: "Veröffentlichungsquote nicht erfasst",
   },
   it: {
+    noAccas: "Nessun Multi-Pick concluso in questo periodo.",
     search: "Cerca nei risultati",
     searchPredictions: "Cerca risultati dei pronostici",
     predictions: "Pronostici",
@@ -298,6 +304,7 @@ export const resultsLabels: Record<Locale, ResultsLabels> = {
     oddsNotRecorded: "Quota di pubblicazione non registrata",
   },
   pt: {
+    noAccas: "Nenhum Multi-Pick concluído neste período.",
     search: "Buscar resultados",
     searchPredictions: "Buscar resultados de palpites",
     predictions: "Palpites",

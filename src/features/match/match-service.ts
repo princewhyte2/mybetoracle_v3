@@ -3,7 +3,7 @@ import type { Locale } from "@/i18n/config";
 import { encodedEntityId } from "@/features/discovery/public-id";
 import { metricByKey, metricShortLabel } from "@/features/streaks/metric-catalog";
 import type { StreakMetric } from "@/features/streaks/types";
-import type { MatchDetail, MatchStreak } from "./types";
+import type { LineupPlayer, RecentMatch, MatchDetail, MatchStreak } from "./types";
 import type { OracleMarket } from "@/features/today/types";
 
 type UnknownRecord = Record<string, unknown>;
@@ -22,7 +22,7 @@ function shortName(name: string) { const parts = name.split(/\s+/).filter(Boolea
 function status(code: string): MatchDetail["status"] { if (["FT", "AET", "PEN"].includes(code)) return "finished"; if (["NS", "TBD", "PST", "CANC", "ABD", "AWD", "WO"].includes(code)) return "scheduled"; return "live"; }
 function outcome(value: unknown): OracleMarket["outcome"] { return value === "WON" ? "won" : value === "LOST" ? "lost" : value === "VOID" ? "void" : undefined; }
 
-function parseMatch(payload: unknown, locale: Locale): MatchDetail {
+export function parseMatch(payload: unknown, locale: Locale): MatchDetail {
   const root = object(payload); const fixture = object(root?.fixture); const home = object(fixture?.homeTeam); const away = object(fixture?.awayTeam); const competition = object(fixture?.competition);
   const fixtureId = text(root?.fixtureId); const canonicalSlug = text(root?.canonicalSlug); const canonicalPath = text(root?.canonicalPath);
   const homeName = text(home?.displayName); const awayName = text(away?.displayName); const kickoffAt = text(fixture?.kickoffAt); const statusCode = text(fixture?.statusCode);
@@ -44,21 +44,45 @@ function parseMatch(payload: unknown, locale: Locale): MatchDetail {
     const id = text(row?.id); const date = text(row?.kickoffAt); const h = text(rowHome?.displayName); const a = text(rowAway?.displayName); const hs = number(row?.homeScore); const as = number(row?.awayScore);
     return id && date && h && a && hs !== null && as !== null ? [{ id, date, competition: text(rowCompetition?.displayName) ?? "", home: h, away: a, score: [hs, as] as [number, number] }] : [];
   });
+  const recentFor = (teamId: string): RecentMatch[] => {
+    const rows = items(root.recentResults).map(object).find(row => row?.teamId === teamId);
+    return (Array.isArray(rows?.fixtures) ? rows.fixtures : []).flatMap(entry => {
+      const row=object(entry), h=object(row?.homeTeam), a=object(row?.awayTeam);
+      const id=text(row?.id), date=text(row?.kickoffAt), hn=text(h?.displayName), an=text(a?.displayName), hs=number(row?.homeScore), as=number(row?.awayScore);
+      if(!id || !date || !hn || !an || hs===null || as===null || Date.parse(date)>=Date.parse(kickoffAt)) return [];
+      const scored=h?.id===teamId?hs:as, conceded=h?.id===teamId?as:hs;
+      return [{id,date,home:hn,away:an,score:[hs,as] as [number,number],result:scored===conceded?"D" as const:scored>conceded?"W" as const:"L" as const}];
+    });
+  };
+  const recentHome=recentFor(text(home.id) ?? ""), recentAway=recentFor(text(away.id) ?? "");
   const score = object(fixture.score); const homeScore = number(score?.home); const awayScore = number(score?.away);
   const lineups = items(root.lineups).map(object).filter((item): item is UnknownRecord => Boolean(item));
   const homeLineup = lineups.find((item) => text(item.teamId) === text(home.id));
   const awayLineup = lineups.find((item) => text(item.teamId) === text(away.id));
-  const lineupPlayers = (lineup: UnknownRecord | undefined) => Array.isArray(lineup?.players) ? lineup.players.flatMap((entry) => {
-    const player = object(entry); const name = text(player?.displayName); return name ? [name] : [];
+  const lineupPlayers = (lineup: UnknownRecord | undefined): LineupPlayer[] => Array.isArray(lineup?.players) ? lineup.players.flatMap((entry) => {
+    const player = object(entry); const name = text(player?.displayName); const id=text(player?.id); return name && id ? [{id,name,number:number(player?.number),grid:text(player?.grid),starter:player?.isStarter===true}] : [];
   }) : [];
   const statistics = items(root.statistics).map(object).filter((item): item is UnknownRecord => Boolean(item));
-  const metricNames = [...new Set(statistics.flatMap((item) => text(item.metric) ? [text(item.metric)!] : []))];
-  const comparison = metricNames.flatMap((metric) => {
-    const homeValue = statistics.find((item) => text(item.metric) === metric && text(item.teamId) === text(home.id));
-    const awayValue = statistics.find((item) => text(item.metric) === metric && text(item.teamId) === text(away.id));
+  const metricNames = [...new Set(statistics.flatMap((item) => text(item.metric) ? [`${text(item.period) ?? "MATCH"}:${text(item.metric)!}`] : []))];
+  const comparison = metricNames.flatMap((key): MatchDetail["comparison"] => {
+    const [period,metric]=key.split(":");
+    const homeValue = statistics.find((item) => text(item.metric) === metric && (text(item.period) ?? "MATCH") === period && text(item.teamId) === text(home.id));
+    const awayValue = statistics.find((item) => text(item.metric) === metric && (text(item.period) ?? "MATCH") === period && text(item.teamId) === text(away.id));
     const h = number(homeValue?.value); const a = number(awayValue?.value);
-    return h !== null && a !== null ? [{ label: metric.replaceAll("_", " "), home: h, away: a, format: "number" as const }] : [];
+    return h !== null && a !== null ? [{ period, label: metric.replaceAll("_", " "), home: h, away: a, format: text(homeValue?.displayValue)?.includes("%") || text(awayValue?.displayValue)?.includes("%") ? "percent" : !Number.isInteger(h) || !Number.isInteger(a) ? "decimal" : "number" }] : [];
   });
+  const playerRows=items(root.playerStatistics).map(object).filter((row):row is UnknownRecord=>Boolean(row));
+  const playerStatistics:NonNullable<MatchDetail["playerStatistics"]>=[];
+  const playerMap=new Map<string,NonNullable<MatchDetail["playerStatistics"]>[number]>();
+  const playerMetrics:Record<string,"rating"|"minutes"|"goals"|"assists">={GAMES_RATING:"rating",GAMES_MINUTES:"minutes",GOALS_TOTAL:"goals",GOALS_ASSISTS:"assists"};
+  for(const row of playerRows) {
+    const id=text(row.providerPlayerId),teamId=text(row.teamId),name=text(row.displayName),metric=playerMetrics[text(row.metric) ?? ""];
+    if(!id || !teamId || !name || !metric)continue;
+    const key=teamId+":"+id;
+    let player=playerMap.get(key);
+    if(!player){player={id:key,teamId,name,rating:null,minutes:null,goals:null,assists:null};playerMap.set(key,player);playerStatistics.push(player);}
+    player[metric]=number(row.value);
+  }
   const standingRows = items(root.standings).map(object).filter((item): item is UnknownRecord => Boolean(item));
   const events = items(root.events).flatMap((entry) => {
     const event = object(entry); const id = text(event?.id); if (!id) return [];
@@ -70,13 +94,13 @@ function parseMatch(payload: unknown, locale: Locale): MatchDetail {
     id: fixtureId, slug: canonicalSlug, canonicalPath, status: status(statusCode), statusCode, kickoffAt,
     competition: { id: text(competition.id) ?? "", name: competitionName, country: text(competition.countryDisplayName) ?? text(competition.countryName) ?? "", countryCode: text(competition.countryCode) ?? "INT", round: text(fixture.round) ?? "" },
     venue: text(venue?.displayName) ?? text(venue?.name), city: text(venue?.city), referee: text(fixture.refereeName),
-    home: { id: text(home?.id) ?? "", name: homeName, shortName: text(home?.shortName) ?? shortName(homeName), country: "", colors: ["#155EEF", "#D7E8FF"], form: [], emblemUrl: text(home?.emblemUrl) },
-    away: { id: text(away?.id) ?? "", name: awayName, shortName: text(away?.shortName) ?? shortName(awayName), country: "", colors: ["#083F87", "#D7E8FF"], form: [], emblemUrl: text(away?.emblemUrl) },
+    home: { id: text(home?.id) ?? "", name: homeName, shortName: text(home?.shortName) ?? shortName(homeName), country: "", colors: ["#155EEF", "#D7E8FF"], form: recentHome.map(row=>row.result), emblemUrl: text(home?.emblemUrl) },
+    away: { id: text(away?.id) ?? "", name: awayName, shortName: text(away?.shortName) ?? shortName(awayName), country: "", colors: ["#083F87", "#D7E8FF"], form: recentAway.map(row=>row.result), emblemUrl: text(away?.emblemUrl) },
     score: homeScore !== null || awayScore !== null ? [homeScore, awayScore] : undefined,
     elapsedMinute: number(fixture.elapsedMinute),
     oracleScore: oracle.confidence, oracleMarket: oracle, predictions, evidence: streaks.slice(0, 3).map((streak) => `${streak.shortLabel} · ${streak.currentLength}`), streaks, h2h,
-    events, comparison,
-    lineup: { formationHome: text(homeLineup?.formation) ?? "", formationAway: text(awayLineup?.formation) ?? "", home: lineupPlayers(homeLineup), away: lineupPlayers(awayLineup) },
+    events, comparison, playerStatistics, recentResults: {home:recentHome,away:recentAway},
+    lineup: { formationHome: text(homeLineup?.formation) ?? "", formationAway: text(awayLineup?.formation) ?? "", home: lineupPlayers(homeLineup).filter(p=>p.starter).map(p=>p.name), away: lineupPlayers(awayLineup).filter(p=>p.starter).map(p=>p.name), homePlayers:lineupPlayers(homeLineup),awayPlayers:lineupPlayers(awayLineup),coachHome:text(homeLineup?.coachName),coachAway:text(awayLineup?.coachName),confirmedHome:homeLineup?.isConfirmed===true,confirmedAway:awayLineup?.isConfirmed===true },
     standings: standingRows.flatMap((row) => {
       const team = object(row.team); const name = text(team?.displayName) ?? text(team?.canonicalName); const position = number(row.rank); const played = number(row.played); const points = number(row.points);
       return name && position !== null && played !== null && points !== null ? [{ position, team: name, played, points, highlighted: [text(home.id), text(away.id)].includes(text(row.teamId)) }] : [];

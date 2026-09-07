@@ -37,6 +37,9 @@ import shellStyles from "@/features/today/today-experience.module.css";
 import type { MatchDetail, MatchDetailTeam, MatchStreak } from "./types";
 import { matchLabels, matchScopeLabel, matchStatLabel, type MatchLabels } from "./labels";
 import styles from "./match-experience.module.css";
+import { PlayerStatistics } from "./player-statistics";
+import { LineupPitch } from "./lineup-pitch";
+import { statisticLabel } from "./statistics-labels";
 
 type MatchTab = "overview" | "oracle" | "h2h" | "lineups" | "stats";
 
@@ -157,34 +160,39 @@ function H2HSection({ match, locale, copy }: { match: MatchDetail; locale: Local
 }
 
 function StatsSection({ match, locale, copy }: { match: MatchDetail; locale: Locale; copy: MatchLabels }) {
+  const [period,setPeriod]=useState("MATCH");
+  const periods=[...new Set(match.comparison.map(item=>item.period ?? "MATCH"))];
+  const selected=periods.includes(period)?period:periods[0];
   if (match.availability.statistics !== "available" || !match.comparison.length) return <UnavailableSection title={copy.statistics} message={copy.notConfirmed} />;
   return (
     <section className={styles.contentSection}>
-      <div className={styles.sectionHeading}><div><span>{copy.seasonBaseline}</span><h2>{copy.teamComparison}</h2></div><small>{copy.leagueMatches}</small></div>
+      <div className={styles.sectionHeading}><h2>{copy.statistics}</h2>{periods.length>1 && <select value={selected} onChange={event=>setPeriod(event.target.value)} aria-label={copy.statistics}>{periods.map(value=><option key={value} value={value}>{value==="MATCH"?copy.match:value}</option>)}</select>}</div>
       <div className={styles.statsHeader}><span>{match.home.shortName}</span><span>{match.away.shortName}</span></div>
       <div className={styles.statRows}>
-        {match.comparison.map((item) => {
+        {match.comparison.filter(item=>(item.period ?? "MATCH")===selected).map((item) => {
           const total = Math.max(item.home + item.away, 1);
           const format = (value: number) => item.format === "percent" ? `${value}%` : item.format === "decimal" ? value.toFixed(item.label === "Expected goals" ? 2 : 1) : value;
-          return <div key={item.label}><div><strong>{format(item.home)}</strong><span>{matchStatLabel(locale,item.label)}</span><strong>{format(item.away)}</strong></div><div className={styles.statTrack}><i style={{ width: `${(item.home / total) * 100}%` }} /><b style={{ width: `${(item.away / total) * 100}%` }} /></div></div>;
+          return <div key={item.label}><div><strong>{format(item.home)}</strong><span>{statisticLabel(locale,matchStatLabel(locale,item.label))}</span><strong>{format(item.away)}</strong></div><div className={styles.statTrack}><i style={{ width: `${(item.home / total) * 100}%` }} /><b style={{ width: `${(item.away / total) * 100}%` }} /></div></div>;
         })}
       </div>
     </section>
   );
 }
 
-function LineupsSection({ match, copy }: { match: MatchDetail; copy: MatchLabels }) {
-  if (match.availability.lineups !== "available" || !match.lineup.home.length || !match.lineup.away.length) return <UnavailableSection title={copy.lineups} message={copy.notConfirmed} />;
+function LineupsSection({ match, copy, locale }: { match: MatchDetail; copy: MatchLabels; locale: Locale }) {
+  if (match.availability.lineups !== "available" || (!match.lineup.home.length && !match.lineup.away.length)) return <UnavailableSection title={copy.lineups} message={copy.notConfirmed} />;
   return (
     <section className={styles.contentSection}>
-      <div className={styles.sectionHeading}><div><span>{copy.expectedXi}</span><h2>{copy.probableLineups}</h2></div><small>{copy.notConfirmed}</small></div>
-      <div className={styles.lineupHeader}><span><Crest team={match.home} /> {match.home.name} <b>{match.lineup.formationHome}</b></span><span><b>{match.lineup.formationAway}</b> {match.away.name} <Crest team={match.away} /></span></div>
-      <div className={styles.lineupGrid}>
-        <ol>{match.lineup.home.map((player, index) => <li key={player}><span>{index + 1}</span>{player}</li>)}</ol>
-        <ol>{match.lineup.away.map((player, index) => <li key={player}>{player}<span>{index + 1}</span></li>)}</ol>
-      </div>
+      <div className={styles.sectionHeading}><h2>{copy.lineups}</h2></div>
+<LineupPitch match={match} locale={locale} />
     </section>
   );
+}
+
+function RecentResults({match,locale,copy}:{match:MatchDetail;locale:Locale;copy:MatchLabels}) {
+  const formatter=new Intl.DateTimeFormat(locale,{day:"2-digit",month:"short"});
+  if(!match.recentResults?.home.length && !match.recentResults?.away.length) return null;
+  return <section className={styles.contentSection}><div className={styles.sectionHeading}><h2>{copy.recentForm}</h2><small>{copy.allCompetitions}</small></div>{(["home","away"] as const).map(side=><div key={side}><h3>{match[side].name}</h3><div className={styles.h2hList}>{match.recentResults?.[side].map(row=><div key={row.id}><time>{formatter.format(new Date(row.date))}</time><span>{row.home}</span><strong>{row.score[0]} - {row.score[1]}</strong><span>{row.away}</span><small className={styles[`form${row.result}`]}>{row.result}</small></div>)}</div></div>)}</section>;
 }
 
 function UnavailableSection({ title, message }: { title: string; message: string }) {
@@ -230,6 +238,22 @@ export function MatchExperience({ match: initialMatch, locale }: { match: MatchD
 
   useEffect(() => {
     const publicId = initialMatch.slug.split("--").at(-1); if (!publicId) return;
+    const controller=new AbortController();
+    let refreshTimer:ReturnType<typeof setTimeout>|undefined;
+    let refreshing=false,refreshAgain=false,disposed=false;
+    const refresh=async()=>{
+      if(disposed)return;
+      if(refreshing){refreshAgain=true;return;}
+      refreshing=true;
+      try {
+        const response=await fetch(`/api/matches/${encodeURIComponent(initialMatch.slug)}?locale=${locale}`,{cache:"no-store",signal:controller.signal});
+        if(response.ok){
+          const fresh=await response.json() as MatchDetail;
+          if(!disposed)setMatch(current=>Date.parse(fresh.sourceUpdatedAt ?? "")>=Date.parse(current.sourceUpdatedAt ?? "")?fresh:{...fresh,score:current.score,status:current.status,statusCode:current.statusCode,elapsedMinute:current.elapsedMinute,predictions:current.predictions,oracleMarket:current.oracleMarket,sourceUpdatedAt:current.sourceUpdatedAt});
+        }
+      } catch {}
+      finally {refreshing=false;if(refreshAgain&&!disposed){refreshAgain=false;refreshTimer=setTimeout(()=>{refreshTimer=undefined;void refresh();},1000);}}
+    };
     const source = new EventSource(`/api/live?fixtures=${encodeURIComponent(publicId)}`);
     const update = (event: MessageEvent<string>) => { try { const payload = JSON.parse(event.data) as { fixtureId?: string; statusCode?: string; homeScore?: number | null; awayScore?: number | null; elapsedMinute?: number | null; observedAt?: string; predictionResults?: Array<{ predictionId: string; result: "PENDING" | "WON" | "LOST" | "VOID" }> }; if (payload.fixtureId !== initialMatch.id) return; setMatch((current) => {
       const results = new Map((payload.predictionResults ?? []).map((result) => [result.predictionId, result.result]));
@@ -241,12 +265,9 @@ export function MatchExperience({ match: initialMatch, locale }: { match: MatchD
       const oracleMarket = predictions.find((prediction) => prediction.market === "ORACLE_PICK") ?? current.oracleMarket;
       return { ...current, predictions, oracleMarket, statusCode: payload.statusCode ?? current.statusCode, status: payload.statusCode ? statusFromCode(payload.statusCode) : current.status, score: payload.homeScore !== undefined || payload.awayScore !== undefined ? [payload.homeScore ?? null, payload.awayScore ?? null] : current.score, elapsedMinute: payload.elapsedMinute ?? current.elapsedMinute, sourceUpdatedAt: payload.observedAt ?? current.sourceUpdatedAt };
     });
-      void fetch(`/api/matches/${encodeURIComponent(initialMatch.slug)}?locale=${locale}`, { cache: "no-store" })
-        .then(async (response) => response.ok ? response.json() as Promise<MatchDetail> : null)
-        .then((fresh) => { if (fresh) setMatch(fresh); })
-        .catch(() => {});
+      if(!refreshTimer)refreshTimer=setTimeout(()=>{refreshTimer=undefined;void refresh();},1000);
     } catch {} };
-    source.addEventListener("fixture_update", update as EventListener); return () => source.close();
+    source.addEventListener("fixture_update", update as EventListener); return () => {disposed=true;source.close();controller.abort();if(refreshTimer)clearTimeout(refreshTimer);};
   }, [initialMatch, locale]);
 
   function navigate(route?: string) { if (route) router.push(`/${locale}/${route}`); }
@@ -257,7 +278,7 @@ export function MatchExperience({ match: initialMatch, locale }: { match: MatchD
       <header className={shellStyles.topbar}>
         <div className={shellStyles.topbarInner}>
           <button className={`${shellStyles.brand} ${styles.brandButton}`} onClick={() => navigate("today")} aria-label={`MyBetOracle ${common.today}`}><MboMark className={shellStyles.brandMark} title="MyBetOracle" /><span className={shellStyles.brandName}>MyBetOracle</span></button>
-          <label className={shellStyles.globalSearch}><Search size={18} /><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder={copy.searchPlaceholder} aria-label={copy.searchFootball} /><kbd>Ctrl K</kbd></label>
+          <label className={shellStyles.globalSearch}><Search size={18} /><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder={copy.searchPlaceholder} aria-label={copy.searchFootball} /></label>
           <div className={shellStyles.topbarActions}>
             <button className={shellStyles.topIconButton} title={common.notifications} aria-label={common.notifications} onClick={() => navigate("saved")}><Bell size={19} /></button>
             <label className={shellStyles.localeSelect}><Languages size={18} /><select value={locale} onChange={(event) => switchLocale(event.target.value)} aria-label={common.language}>{locales.map((item) => <option value={item} key={item}>{localeNames[item]}</option>)}</select></label>
@@ -296,9 +317,11 @@ export function MatchExperience({ match: initialMatch, locale }: { match: MatchD
             {activeTab === "overview" && <TimelineSection match={match} locale={locale} copy={copy} />}
             {(activeTab === "overview" || activeTab === "oracle") && <OraclePanel match={match} copy={copy} outcomes={outcomes} />}
             {activeTab === "overview" && (match.availability.streaks === "available" && match.streaks.length ? <StreakSection match={match} locale={locale} copy={copy} onOpen={() => navigate(`streaks?teamId=${encodeURIComponent(match.home.id)}`)} /> : <UnavailableSection title={copy.matchStreaks} message={copy.notConfirmed} />)}
-            {(activeTab === "overview" || activeTab === "stats") && <StatsSection match={match} locale={locale} copy={copy} />}
+            {(activeTab === "stats" || (activeTab === "overview" && match.availability.statistics==="available")) && <StatsSection match={match} locale={locale} copy={copy} />}
             {(activeTab === "overview" || activeTab === "h2h") && <H2HSection match={match} locale={locale} copy={copy} />}
-            {(activeTab === "overview" || activeTab === "lineups") && <LineupsSection match={match} copy={copy} />}
+            {(activeTab === "overview" || activeTab === "h2h") && <RecentResults match={match} locale={locale} copy={copy} />}
+            {activeTab==="stats" && <PlayerStatistics match={match} locale={locale}/>}
+            {(activeTab === "lineups" || (activeTab === "overview" && match.availability.lineups==="available")) && <LineupsSection match={match} copy={copy} locale={locale} />}
           </div>
         </main>
 
