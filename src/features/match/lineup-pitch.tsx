@@ -41,12 +41,13 @@ export function LineupPitch({ match, locale }: { match:MatchDetail; locale:Local
   return <div className={styles.teams}>{(["home","away"] as const).map(side=>{
     const team=match[side], home=side==="home";
     const players=(home?match.lineup.homePlayers:match.lineup.awayPlayers) ?? [];
+    if (!players.length) return null;
     const confirmed=home?match.lineup.confirmedHome:match.lineup.confirmedAway;
     const positions=confirmed?pitchPositions(players):null;
     const formation=home?match.lineup.formationHome:match.lineup.formationAway;
     const coach=home?match.lineup.coachHome:match.lineup.coachAway;
     return <section key={side} className={styles.team}>
-      <header><strong>{team.name}</strong><span>{formation}</span></header>
+      <header><strong>{team.name}</strong>{formation && <span>{formation}</span>}</header>
       {positions && <div className={styles.pitch} aria-label={`${team.name} · ${formation}`}>
         <i className={styles.halfway}/><i className={styles.circle}/><i className={styles.boxTop}/><i className={styles.boxBottom}/>
         {positions.map(({player,x,y})=><div key={player.id} className={styles.player} style={{left:`${x}%`,top:`${y}%`}} title={player.name}>

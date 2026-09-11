@@ -212,7 +212,6 @@ function MatchRow({
             {match.score && <strong>{match.score[1]}</strong>}
           </span>
         </span>
-        <span className={styles.mobilePick} title={market.selection}>{market.shortSelection}</span>
       </button>
 
       <button className={styles.marketPreview} onClick={onSelect} aria-label={market.selection} title={market.selection}>
@@ -243,6 +242,12 @@ function MatchRow({
           </>
         )}
       </div>
+      <button className={styles.mobilePrediction} onClick={onSelect} aria-label={market.selection}>
+        <strong title={market.selection}>{market.shortSelection}</strong>
+        {market.available && <span className={styles.mobileConfidence} title={interpolate(copy.oracleScore, { score: market.confidence })} aria-label={interpolate(copy.oracleScore, { score: market.confidence })}><Sparkles size={12} />{market.confidence}/100</span>}
+        {market.odds !== null && <span className={styles.mobileOdds}>{market.odds}</span>}
+        {market.outcome && <OutcomeBadge outcome={market.outcome} labels={statuses} compact />}
+      </button>
     </article>
   );
 }
@@ -687,7 +692,7 @@ export function TodayExperience({ data, locale }: { data: TodayData; locale: Loc
               date.setUTCDate(date.getUTCDate() + relative);
               return (
                 <button key={relative} onClick={() => changeDate(relative)} className={relative === 0 ? styles.dateActive : ""}>
-                  <span>{relative === 0 ? common.today : shortDateFormatter.format(date)}</span>
+                  <span>{shortDateFormatter.format(date)}</span>
                   <strong>{date.getUTCDate()}</strong>
                 </button>
               );

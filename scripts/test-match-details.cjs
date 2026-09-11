@@ -4,6 +4,7 @@ function load(file,imports={}){
  const module={exports:{}};new Function('require','module','exports',code)(name=>name in imports?imports[name]:require(name),module,module.exports);return module.exports;
 }
 const {pitchPositions}=load('src/features/match/lineup-pitch.tsx',{'./lineup-pitch.module.css':{}});
+const {matchSectionVisibility}=load('src/features/match/section-visibility.ts');
 const {parseMatch}=load('src/features/match/match-service.ts',{'server-only':{},'@/features/discovery/public-id':{},'@/features/streaks/metric-catalog':{metricByKey:new Map()}});
 const starters=[1,4,3,3].flatMap((count,row)=>Array.from({length:count},(_,column)=>({id:`${row}:${column}`,name:'Player',number:column+1,grid:`${row+1}:${column+1}`,starter:true})));
 test('positions all eleven supplied starters and never includes the bench',()=>{
@@ -38,4 +39,28 @@ test('lineups preserve real shirt numbers, confirmation, coach and bench separat
 test('statistics preserve percent units, periods, zero scores and missing values',()=>{
  const match=parseMatch(fixture(),'en');assert.deepEqual(match.score,[0,0]);assert.equal(match.comparison.length,3);
  assert.equal(match.comparison[0].format,'percent');assert.ok(match.comparison.some(row=>row.period==='FIRST_HALF'&&row.home===0));assert.ok(!match.comparison.some(row=>row.label==='MISSING'));
+});
+
+test('empty sections are hidden even when availability claims available',()=>{
+ const match=parseMatch(fixture(),'en');
+ match.comparison=[];match.lineup.homePlayers=[];
+ match.availability.h2h='available';match.availability.streaks='available';
+ assert.deepEqual(matchSectionVisibility(match),{overview:true,oracle:false,h2h:false,lineups:false,stats:false,streaks:false});
+});
+test('real zero statistics and supplied lineups remain visible',()=>{
+ const match=parseMatch(fixture(),'en');
+ assert.equal(matchSectionVisibility(match).stats,true);
+ assert.equal(matchSectionVisibility(match).lineups,true);
+ match.comparison=[];
+ match.playerStatistics=[{id:'player',teamId:'home',name:'Player',rating:null,minutes:0,goals:null,assists:null}];
+ assert.equal(matchSectionVisibility(match).stats,true);
+ match.playerStatistics[0].minutes=null;
+ assert.equal(matchSectionVisibility(match).stats,false);
+});
+test('sections appear when real evidence arrives without changing the route',()=>{
+ const match=parseMatch(fixture(),'en');
+ assert.equal(matchSectionVisibility(match).h2h,false);
+ match.availability.h2h='available';
+ match.h2h=[{id:'previous',date:'2026-09-01',competition:'League',home:'Home',away:'Away',score:[0,0]}];
+ assert.equal(matchSectionVisibility(match).h2h,true);
 });
