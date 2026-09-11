@@ -60,7 +60,10 @@ export function parseMatch(payload: unknown, locale: Locale): MatchDetail {
   const homeLineup = lineups.find((item) => text(item.teamId) === text(home.id));
   const awayLineup = lineups.find((item) => text(item.teamId) === text(away.id));
   const lineupPlayers = (lineup: UnknownRecord | undefined): LineupPlayer[] => Array.isArray(lineup?.players) ? lineup.players.flatMap((entry) => {
-    const player = object(entry); const name = text(player?.displayName); const id=text(player?.id); return name && id ? [{id,name,number:number(player?.number),grid:text(player?.grid),starter:player?.isStarter===true}] : [];
+    const player = object(entry); const name = text(player?.displayName); const id=text(player?.id);
+    const photo = text(player?.photoUrl);
+    const photoUrl = photo && /^https:\/\/media\.api-sports\.io\/football\/players\/[1-9]\d{0,14}\.png$/.test(photo) ? photo : null;
+    return name && id ? [{id,name,number:number(player?.number),grid:text(player?.grid),starter:player?.isStarter===true,photoUrl}] : [];
   }) : [];
   const statistics = items(root.statistics).map(object).filter((item): item is UnknownRecord => Boolean(item));
   const metricNames = [...new Set(statistics.flatMap((item) => text(item.metric) ? [`${text(item.period) ?? "MATCH"}:${text(item.metric)!}`] : []))];

@@ -1,6 +1,7 @@
 import type { Locale } from "@/i18n/config";
 import type { LineupPlayer, MatchDetail } from "./types";
 import styles from "./lineup-pitch.module.css";
+import { PlayerPortrait } from "./player-portrait";
 
 const copy = {
   en: { starters:"Starting XI", bench:"Substitutes", coach:"Coach" },
@@ -51,7 +52,7 @@ export function LineupPitch({ match, locale }: { match:MatchDetail; locale:Local
       {positions && <div className={styles.pitch} aria-label={`${team.name} · ${formation}`}>
         <i className={styles.halfway}/><i className={styles.circle}/><i className={styles.boxTop}/><i className={styles.boxBottom}/>
         {positions.map(({player,x,y})=><div key={player.id} className={styles.player} style={{left:`${x}%`,top:`${y}%`}} title={player.name}>
-          <b>{player.number ?? "—"}</b><span>{player.name}</span>
+          <PlayerPortrait player={player} /><span>{player.name}</span>
         </div>)}
       </div>}
       {[true,false].map(starter=>{

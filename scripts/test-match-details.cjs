@@ -3,10 +3,36 @@ function load(file,imports={}){
  const code=ts.transpileModule(fs.readFileSync(path.join(__dirname,'..',file),'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022,jsx:ts.JsxEmit.ReactJSX}}).outputText;
  const module={exports:{}};new Function('require','module','exports',code)(name=>name in imports?imports[name]:require(name),module,module.exports);return module.exports;
 }
-const {pitchPositions}=load('src/features/match/lineup-pitch.tsx',{'./lineup-pitch.module.css':{}});
+const {pitchPositions}=load('src/features/match/lineup-pitch.tsx',{'./lineup-pitch.module.css':{},'./player-portrait':{}});
 const {matchSectionVisibility}=load('src/features/match/section-visibility.ts');
 const {parseMatch}=load('src/features/match/match-service.ts',{'server-only':{},'@/features/discovery/public-id':{},'@/features/streaks/metric-catalog':{metricByKey:new Map()}});
 const starters=[1,4,3,3].flatMap((count,row)=>Array.from({length:count},(_,column)=>({id:`${row}:${column}`,name:'Player',number:column+1,grid:`${row+1}:${column+1}`,starter:true})));
+
+test('lineup photos accept only the documented HTTPS numeric-player media path in every locale',()=>{
+ for(const locale of ['en','fr','es','de','it','pt']) {
+  const payload=fixture();payload.lineups.items[0].players[0].photoUrl='https://media.api-sports.io/football/players/35931.png';
+  assert.equal(parseMatch(payload,locale).lineup.homePlayers[0].photoUrl,payload.lineups.items[0].players[0].photoUrl);
+  for(const value of [null,'https://evil.example/1.png','http://media.api-sports.io/football/players/1.png','https://media.api-sports.io/football/players/1.png?x=1','https://media.api-sports.io/football/players/../1.png']) {
+   payload.lineups.items[0].players[0].photoUrl=value;
+   assert.equal(parseMatch(payload,locale).lineup.homePlayers[0].photoUrl,null);
+  }
+ }
+});
+test('portrait retains number while loading, falls back on error and accepts a changed source',()=>{
+ const values=[];let cursor=0;
+ const {PlayerPortrait}=load('src/features/match/player-portrait.tsx',{
+  './lineup-pitch.module.css':{default:{}},'next/image':{default:()=>null},
+  react:{useState:initial=>{const slot=cursor++;if(!(slot in values))values[slot]=initial;return [values[slot],value=>{values[slot]=value;}];}},
+ });
+ const player={...starters[0],photoUrl:'https://media.api-sports.io/football/players/35931.png'};
+ const render=()=>{cursor=0;return PlayerPortrait({player}).props.children;};
+ let [number,image]=render();assert.equal(number.props.children,1);assert.equal(number.props['data-loaded'],false);
+ assert.equal(image.props.loading,'lazy');assert.equal(image.props.width,36);assert.equal(image.props.height,36);
+ image.props.onLoad();assert.equal(render()[0].props['data-loaded'],true);
+ image.props.onError();assert.equal(render()[1],false);assert.equal(render()[0].props.children,1);
+ player.photoUrl='https://media.api-sports.io/football/players/625.png';assert.equal(render()[1].props.src,player.photoUrl);
+ player.photoUrl=null;assert.equal(render()[1],false);
+});
 test('positions all eleven supplied starters and never includes the bench',()=>{
  const positions=pitchPositions([...starters,{id:'bench',name:'Substitute',grid:null,number:12,starter:false}]);
  assert.equal(positions.length,11);assert.ok(positions.every(p=>p.x>0&&p.x<100&&p.y>0&&p.y<100));

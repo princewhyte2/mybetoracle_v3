@@ -6,7 +6,9 @@ const nextConfig: NextConfig = {
   reactCompiler: true,
   allowedDevOrigins: ["127.0.0.1"],
   images: {
-    remotePatterns: [{ protocol: "https", hostname: "media.api-sports.io", pathname: "/flags/**" }, { protocol: "https", hostname: "media.api-sports.io", pathname: "/football/leagues/**" }, { protocol: "https", hostname: "media.api-sports.io", pathname: "/football/teams/**" }],
+    // Portraits use the provider media CDN, never the paid football API.
+    // The match mapper additionally restricts this to numeric player filenames.
+    remotePatterns: [{ protocol: "https", hostname: "media.api-sports.io", pathname: "/flags/**" }, { protocol: "https", hostname: "media.api-sports.io", pathname: "/football/leagues/**" }, { protocol: "https", hostname: "media.api-sports.io", pathname: "/football/teams/**" }, { protocol: "https", hostname: "media.api-sports.io", port: "", pathname: "/football/players/*.png", search: "" }],
   },
   async redirects() {
     return ["en", "es", "fr", "de", "it", "pt"].flatMap((locale) => [
