@@ -39,7 +39,8 @@ export default async function TodayPage({ params, searchParams }: PageProps<"/[l
   catch (error) { errorCode = error instanceof TodayFeedError ? error.code : "TODAY_SERVICE_UNAVAILABLE"; }
   if (errorCode || !data) return <TodayState title={runtime.unavailableTitle} message={runtime.unavailableHelp} code={errorCode ?? undefined} />;
   if (data.totalMatches === 0) return <TodayState title={runtime.noFixturesTitle} message={runtime.noFixturesHelp} />;
-  return <TodayExperience data={data} locale={locale} />;
+  // A different product day owns a fresh feed, selection and live subscription.
+  return <TodayExperience key={`${locale}:${date}`} data={data} locale={locale} />;
 }
 
 function TodayState({ title, message, code }: { title: string; message: string; code?: string }) {

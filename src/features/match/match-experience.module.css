@@ -152,7 +152,7 @@
 .kickoffBlock small[data-state="finished"] { background: var(--canvas); color: var(--muted-strong); }
 
 .formStrip { display: flex; gap: 3px; }
-.formStrip span { display: grid; width: 19px; height: 19px; place-items: center; border-radius: 3px; color: var(--white); font-size: 7px; font-weight: 850; }
+.formStrip span, .h2hList small.formW, .h2hList small.formD, .h2hList small.formL { display: grid; width: 19px; height: 19px; place-items: center; border-radius: 3px; color: var(--white); font-size: 7px; font-weight: 850; }
 .formW { background: #16794a; }
 .formD { background: #697789; }
 .formL { background: #b83c48; }
@@ -329,6 +329,7 @@
   .streakColumn > header { min-height: 34px; }
   .h2hList > div { grid-template-columns: 60px minmax(70px, 1fr) 36px minmax(70px, 1fr); padding: 0 7px; }
   .h2hList small { display: none; }
+  .h2hList > div:has(small.formW), .h2hList > div:has(small.formD), .h2hList > div:has(small.formL) { grid-template-columns: 50px minmax(0, 1fr) 36px minmax(0, 1fr) 19px; }
   .lineupHeader > span { padding: 0 7px; font-size: 8px; }
   .lineupHeader .crest { display: none; }
   .lineupGrid ol { padding-right: 7px; padding-left: 7px; }
