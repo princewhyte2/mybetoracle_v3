@@ -1,5 +1,6 @@
 "use client";
 
+import { MarketIntelligence, intelligenceCopy } from "./market-intelligence";
 import { predictionMarketLabel } from "@/i18n/prediction-markets";
 
 import {
@@ -89,6 +90,8 @@ const marketOptions = [
   { value: "TOTAL_3_5", text: "O/U 3.5" },
   { value: "GOALS_BAND", text: "Goals band" },
   { value: "HALFTIME_RESULT", text: "Half-time" },
+  { value: "HALFTIME_FULLTIME", text: "HT/FT" },
+  { value: "CARDS", text: "Cards" },
   { value: "CORNERS", text: "Corners" },
   { value: "HANDICAP", text: "Handicap" },
   { value: "value", text: "Value" },
@@ -158,11 +161,13 @@ function OracleGauge({ score, compact = false }: { score: number; compact?: bool
 }
 
 function resolveMarketKey(match: Match, lens: PredictionLens): PredictionMarket {
+  if ((lens === 'value' || lens === 'top') && match.rankedSelection) return match.rankedSelection.marketGroup;
   if (lens === 'value' || lens === 'top') return valueMarket(match, lens === 'top') ?? 'ORACLE_PICK';
   return lens === "best" ? "ORACLE_PICK" : lens;
 }
 
 function getMarket(match: Match, lens: PredictionLens): OracleMarket {
+  if ((lens === "top" || lens === "value") && match.rankedSelection) { const rank = match.rankedSelection; return { ...match.markets[rank.marketGroup], probability: rank.selection.probability, selection: rank.selection.selectionLabel ?? rank.selection.marketValue, shortSelection: rank.selection.selectionShortLabel ?? rank.selection.marketValue, marketType: rank.selection.marketType, marketValue: rank.selection.marketValue, valueAnalysis: rank.valueAnalysis, odds: String(rank.valueAnalysis.decimalOdds) }; }
   const market = match.markets[resolveMarketKey(match, lens)];
   if ((lens === 'value' || lens === 'top') && market.valueAnalysis) return { ...market, odds: String(market.valueAnalysis.decimalOdds) };
   return market;
@@ -243,7 +248,7 @@ function MatchRow({
       </button>
 
       <button className={styles.scorePreview} onClick={onSelect} title={interpolate(copy.oracleScore, { score: market.confidence })}>
-        <OracleGauge score={market.confidence} compact />
+        {match.rankedSelection && market.probability != null ? <strong>{Math.round(market.probability * 100)}%</strong> : <OracleGauge score={market.confidence} compact />}
       </button>
 
       <div className={styles.rowActions}>
@@ -268,7 +273,7 @@ function MatchRow({
       </div>
       <button className={styles.mobilePrediction} onClick={onSelect} aria-label={market.selection}>
         <strong title={market.selection}>{market.shortSelection}</strong>
-        {market.available && <span className={styles.mobileConfidence} title={interpolate(copy.oracleScore, { score: market.confidence })} aria-label={interpolate(copy.oracleScore, { score: market.confidence })}><Sparkles size={12} />{market.confidence}/100</span>}
+        {market.available && <span className={styles.mobileConfidence} title={interpolate(copy.oracleScore, { score: market.confidence })} aria-label={interpolate(copy.oracleScore, { score: market.confidence })}><Sparkles size={12} />{match.rankedSelection && market.probability != null ? `${Math.round(market.probability * 100)}%` : `${market.confidence}/100`}</span>}
         {market.odds !== null && <span className={styles.mobileOdds}>{market.odds}</span>}
         {market.outcome && <OutcomeBadge outcome={market.outcome} labels={statuses} compact />}
       </button>
@@ -347,6 +352,10 @@ export function TodayExperience({ data, locale }: { data: TodayData; locale: Loc
   const allMatches = useMemo(() => feed.competitions.flatMap((competition) => competition.matches), [feed.competitions]);
   const [filter, setFilter] = useState<Filter>("all");
   const [marketLens, setMarketLens] = useState<PredictionLens>("best");
+  const [marketFilter, setMarketFilter] = useState("");
+  const discovery = marketLens === "top" || marketLens === "value" ? marketLens : "all";
+  const [clockNow,setClockNow]=useState(()=>Date.now());
+  useEffect(()=>{const timer=setInterval(()=>setClockNow(Date.now()),10000);return()=>clearInterval(timer)},[]);
   const [query, setQuery] = useState("");
   const [followed, setFollowed] = useState(new Set<string>());
   const [added, setAdded] = useState(new Set<string>());
@@ -360,7 +369,7 @@ export function TodayExperience({ data, locale }: { data: TodayData; locale: Loc
   const [visibleCompetitionCount, setVisibleCompetitionCount] = useState(20);
   const [loadingMore, setLoadingMore] = useState(false);
   const [loadMoreFailed, setLoadMoreFailed] = useState(false);
-  const [loadingView, setLoadingView] = useState(false);
+  const loadingView = false;
   const [viewFailed, setViewFailed] = useState(false);
   const [searchLoading, setSearchLoading] = useState(false);
   const [searchFailed, setSearchFailed] = useState(false);
@@ -381,44 +390,22 @@ export function TodayExperience({ data, locale }: { data: TodayData; locale: Loc
 
   useEffect(() => {
     const search = query.trim();
-    if (search.length < 2) return;
-
-    const controller = new AbortController();
-    let active = true;
+    const controller = new AbortController(); let active = true;
     const timer = window.setTimeout(async () => {
+      setSearchLoading(true); setSearchFailed(false);
       try {
-        const params = new URLSearchParams({
-          date: allFeed.dateIso.slice(0, 10),
-          locale,
-          view: "all",
-          page: "1",
-          search,
-        });
-        const response = await fetch(`/api/today?${params}`, { cache: "no-store", signal: controller.signal });
-        if (!response.ok) throw new Error("TODAY_SEARCH_UNAVAILABLE");
-        const next = await response.json() as TodayData;
-        if (active) {
-          setFeed({
-            ...next,
-            oraclePickId: allFeed.oraclePickId,
-            oraclePick: allFeed.oraclePick,
-            performance: allFeed.performance,
-          });
-          setVisibleCompetitionCount(20);
-        }
-      } catch (error) {
-        if (active && !(error instanceof DOMException && error.name === "AbortError")) setSearchFailed(true);
-      } finally {
-        if (active) setSearchLoading(false);
-      }
-    }, 250);
-
-    return () => {
-      active = false;
-      window.clearTimeout(timer);
-      controller.abort();
-    };
-  }, [allFeed, locale, query, searchAttempt]);
+        const params = new URLSearchParams({ date:data.dateIso.slice(0,10), locale, view:filter==='live'?'live':discovery, page:'1' });
+        if(search.length>=2)params.set('search',search);
+        if(marketFilter)params.set('marketGroup',marketFilter);
+        const response=await fetch(`/api/today?${params}`,{cache:'no-store',signal:controller.signal});
+        if(!response.ok)throw new Error('TODAY_DISCOVERY_UNAVAILABLE');
+        const next=await response.json() as TodayData;
+        if(active){setFeed(next);setVisibleCompetitionCount(20);const first=next.competitions[0]?.matches[0];if(first)setSelectedMatch(first)}
+      }catch(error){if(active&&!(error instanceof DOMException&&error.name==='AbortError'))setSearchFailed(true)}
+      finally{if(active)setSearchLoading(false)}
+    },search.length>=2?250:0);
+    return()=>{active=false;clearTimeout(timer);controller.abort()};
+  },[data.dateIso,locale,query,searchAttempt,discovery,marketFilter,filter]);
 
   useEffect(() => {
     let active=true;
@@ -429,17 +416,18 @@ export function TodayExperience({ data, locale }: { data: TodayData; locale: Loc
   useEffect(() => {
     const source = new EventSource(`/api/live?date=${encodeURIComponent(feed.dateIso.slice(0, 10))}`);
     const update = (event: MessageEvent<string>) => { try {
-      const payload = JSON.parse(event.data) as { fixtureId?: string; statusCode?: string; homeScore?: number | null; awayScore?: number | null; elapsedMinute?: number | null; predictionResults?: Array<{ predictionId: string; marketGroup: PredictionMarket; result: "PENDING" | "WON" | "LOST" | "VOID" }> };
+      const payload = JSON.parse(event.data) as { livePredictions?: Match["livePrediction"]; fixtureId?: string; statusCode?: string; homeScore?: number | null; awayScore?: number | null; elapsedMinute?: number | null; predictionResults?: Array<{ predictionId: string; marketGroup: PredictionMarket; result: "PENDING" | "WON" | "LOST" | "VOID" }> };
       if (!payload.fixtureId) return;
       const apply = (match: Match): Match => {
-        if (match.id !== payload.fixtureId) return match;
+        if (!match || match.id !== payload.fixtureId) return match;
+        if(payload.livePredictions&&match.livePrediction&&Date.parse(payload.livePredictions.sourceObservedAt)<Date.parse(match.livePrediction.sourceObservedAt))return match;
         const results = new Map((payload.predictionResults ?? []).map((result) => [result.predictionId, result.result]));
         const markets = Object.fromEntries(Object.entries(match.markets).map(([group, market]) => {
           const result = market.predictionId ? results.get(market.predictionId) : undefined;
           const outcome: TipOutcome | undefined = result === "WON" ? "won" : result === "LOST" ? "lost" : result === "VOID" ? "void" : market.outcome;
           return [group, { ...market, outcome }];
         })) as Match["markets"];
-        return { ...match, markets, statusCode: payload.statusCode ?? match.statusCode, state: payload.statusCode ? stateForLiveCode(payload.statusCode) : match.state, kickoff: payload.statusCode ? `${payload.statusCode}${payload.elapsedMinute !== null && payload.elapsedMinute !== undefined ? ` ${payload.elapsedMinute}'` : ""}` : match.kickoff, elapsedMinute: payload.elapsedMinute ?? match.elapsedMinute, score: payload.homeScore !== undefined || payload.awayScore !== undefined ? [payload.homeScore ?? null, payload.awayScore ?? null] : match.score };
+        return { ...match, livePrediction:payload.livePredictions??match.livePrediction, markets, statusCode: payload.statusCode ?? match.statusCode, state: payload.statusCode ? stateForLiveCode(payload.statusCode) : match.state, kickoff: payload.statusCode ? `${payload.statusCode}${payload.elapsedMinute !== null && payload.elapsedMinute !== undefined ? ` ${payload.elapsedMinute}'` : ""}` : match.kickoff, elapsedMinute: payload.elapsedMinute ?? match.elapsedMinute, score: payload.homeScore !== undefined || payload.awayScore !== undefined ? [payload.homeScore ?? null, payload.awayScore ?? null] : match.score };
       };
       setFeed((current) => ({ ...current, competitions: current.competitions.map((competition) => ({ ...competition, matches: competition.matches.map(apply) })) }));
       setSelectedMatch((current) => apply(current));
@@ -459,11 +447,11 @@ export function TodayExperience({ data, locale }: { data: TodayData; locale: Loc
             (filter === "live" && match.state === "live") ||
             (filter === "oracle" && match.oracleScore >= 80) ||
             (filter === "following" && followed.has(match.id));
-          return matchesFilter && (marketLens !== 'value' && marketLens !== 'top' || valueMarket(match, marketLens === 'top') !== null);
+          return matchesFilter && (marketLens !== 'value' && marketLens !== 'top' || Boolean(match.rankedSelection) && (!match.kickoffAt || Date.parse(match.kickoffAt)>clockNow));
         }),
       }))
       .filter((competition) => competition.matches.length > 0);
-  }, [feed.competitions, filter, followed, marketLens]);
+  }, [feed.competitions, filter, followed, marketLens, clockNow]);
 
   const visibleCompetitions = filteredCompetitions.slice(0, visibleCompetitionCount);
 
@@ -482,9 +470,10 @@ export function TodayExperience({ data, locale }: { data: TodayData; locale: Loc
     setLoadingMore(true);
     setLoadMoreFailed(false);
     try {
-      const view = filter === "live" ? "live" : "all";
+      const view = filter === "live" ? "live" : discovery;
       const search = query.trim().length >= 2 ? query.trim() : undefined;
       const params = new URLSearchParams({ date: feed.dateIso.slice(0, 10), locale, view, page: String(feed.pagination.page + 1), cursor: feed.pagination.nextCursor });
+      if(marketFilter)params.set("marketGroup",marketFilter);
       if (search) params.set("search", search);
       const response = await fetch(`/api/today?${params}`, { cache: "no-store" });
       if (!response.ok) { setLoadMoreFailed(true); return; }
@@ -500,30 +489,8 @@ export function TodayExperience({ data, locale }: { data: TodayData; locale: Loc
   }
 
   async function selectFilter(value: Filter) {
-    if (query) {
-      setQuery("");
-      setSearchLoading(false);
-      setSearchFailed(false);
-    }
-    setFilter(value);
-    setVisibleCompetitionCount(20);
-    setLoadMoreFailed(false);
-    setViewFailed(false);
-    if (value !== "live") {
-      setFeed(allFeed);
-      return;
-    }
-    setLoadingView(true);
-    try {
-      const response = await fetch(`/api/today?date=${data.dateIso.slice(0, 10)}&locale=${locale}&view=live&page=1`, { cache: "no-store" });
-      if (!response.ok) throw new Error("LIVE_VIEW_UNAVAILABLE");
-      const next = await response.json() as TodayData;
-      setFeed(next);
-    } catch {
-      setViewFailed(true);
-    } finally {
-      setLoadingView(false);
-    }
+    setFilter(value);setViewFailed(false);setVisibleCompetitionCount(20);
+    if(value==='live'&&(marketLens==='top'||marketLens==='value'))setMarketLens(marketFilter?marketFilter as PredictionLens:'REGULAR');
   }
 
   function toggleSet(setter: React.Dispatch<React.SetStateAction<Set<string>>>, id: string) {
@@ -746,20 +713,13 @@ export function TodayExperience({ data, locale }: { data: TodayData; locale: Loc
 
           <section className={styles.marketLens} aria-label={copy.predictionMarket}>
             <div className={styles.marketSegments} role="tablist" aria-label={copy.marketFamilies}>
-              {marketOptions.filter(option => ['best', 'value', 'top', 'MIXED', 'REGULAR', 'BTTS', 'TOTAL_2_5', 'CORRECT_SCORE'].includes(option.value) || allMatches.some(match => match.markets[option.value as PredictionMarket]?.available)).map((option) => (
-                <button
-                  key={option.value}
-                  className={marketLens === option.value ? styles.marketSegmentActive : ""}
-                  onClick={() => setMarketLens(option.value)}
-                  role="tab"
-                  aria-selected={marketLens === option.value}
-                  title={"title" in option ? copy[option.title] : valueViewLabels[locale][option.value] ?? (predictionMarketLabel(locale, option.value) || option.text)}
-                >
-                  {option.value === "best" && <Sparkles size={14} />}
-                  <span>{"label" in option ? copy[option.label] : valueViewLabels[locale][option.value] ?? (predictionMarketLabel(locale, option.value) || option.text)}</span>
-                </button>
-              ))}
+              {(['best','top','value'] as const).map(value=><button key={value} className={(value==='best'?discovery==='all':discovery===value)?styles.marketSegmentActive:''} onClick={()=>{setFilter('all');setMarketLens(value==='best'?(marketFilter?marketFilter as PredictionLens:'best'):value)}} role="tab" aria-selected={value==='best'?discovery==='all':discovery===value}>{value==='best'?intelligenceCopy(locale)[22]:valueViewLabels[locale][value]}</button>)}
+              <select className={styles.marketPicker} aria-label={copy.predictionMarket} value={marketFilter} onChange={event=>{setMarketFilter(event.target.value);if(discovery==='all')setMarketLens(event.target.value?event.target.value as PredictionLens:'best')}}>
+                <option value="">{copy.predictionMarket}</option>
+                {marketOptions.filter(option=>!['best','top','value'].includes(option.value)).map(option=><option key={option.value} value={option.value}>{predictionMarketLabel(locale,option.value)}</option>)}
+              </select>
             </div>
+            {discovery!=="all" && <p className={styles.discoveryNote}>{intelligenceCopy(locale)[feed.ranking?.availability === "NOT_GENERATED" ? 26 : discovery==="top"?20:21]}</p>}
           </section>
 
           <div className={styles.feedMeta}>
@@ -835,6 +795,7 @@ export function TodayExperience({ data, locale }: { data: TodayData; locale: Loc
         </main>
 
         <aside className={styles.intelligenceRail}>
+          <MarketIntelligence key={`${selectedMatch.id}:${resolveMarketKey(selectedMatch,marketLens)}`} match={selectedMatch} group={resolveMarketKey(selectedMatch,marketLens)} locale={locale} />
           <section className={styles.oraclePanel}>
             <div className={styles.oraclePanelHeader}>
               <span><Sparkles size={15} /> {copy.oraclePick}</span>
@@ -849,7 +810,7 @@ export function TodayExperience({ data, locale }: { data: TodayData; locale: Loc
             </div>
             <div className={styles.oracleDecision}>
               <div className={styles.oracleScoreMetric} title={interpolate(copy.oracleScore, { score: selectedMarket.confidence })}>
-                <OracleGauge score={selectedMarket.confidence} />
+                {selectedMatch.rankedSelection && selectedMarket.probability != null ? <strong>{Math.round(selectedMarket.probability * 100)}%</strong> : <OracleGauge score={selectedMarket.confidence} />}
               </div>
               <div>
                 <h2>{selectedMarket.selection}</h2>
@@ -862,6 +823,7 @@ export function TodayExperience({ data, locale }: { data: TodayData; locale: Loc
                 <span>{copy.settledFullTime}</span>
               </div>
             )}
+            {selectedMarket.valueAnalysis && <dl className={styles.valueEvidence}><div><dt>{intelligenceCopy(locale)[3]}</dt><dd>{new Intl.NumberFormat(locale,{style:"percent",maximumFractionDigits:1}).format(selectedMarket.valueAnalysis.probability)}</dd></div><div><dt>{intelligenceCopy(locale)[19]}</dt><dd>+{new Intl.NumberFormat(locale,{style:"percent",maximumFractionDigits:1}).format(selectedMarket.valueAnalysis.edge)}</dd></div><div><dt>{intelligenceCopy(locale)[4]}</dt><dd>{new Intl.DateTimeFormat(locale,{hour:"2-digit",minute:"2-digit"}).format(new Date(selectedMarket.valueAnalysis.capturedAt))}</dd></div></dl>}
             {selectedMatch.insight && <p className={styles.insight}>{translateInsight(locale, selectedMatch.insight)}</p>}
             <div className={styles.panelActions}>
               <button className={styles.primaryButton} disabled={!selectedMatch.slug} onClick={() => selectedMatch.slug && router.push(`/${locale}/match/${selectedMatch.slug}`)}>{copy.fullIntelligence} <ChevronRight size={16} /></button>

@@ -1,0 +1,24 @@
+.panel { border-top:1px solid var(--border); padding:20px 0; color:var(--graphite); min-width:0; }
+.panel header { display:flex; align-items:flex-start; justify-content:space-between; gap:12px; flex-wrap:wrap; }
+.panel h3 { font-family:var(--font-sora),sans-serif; font-size:16px; margin:5px 0 16px; font-weight:600; }
+.panel small,.panel footer { font-size:11px; color:var(--muted-strong); }
+.phase { display:flex; gap:2px; border:1px solid var(--border); border-radius:6px; padding:3px; }
+.phase button { padding:6px 9px; border:0; border-radius:4px; background:transparent; color:var(--muted-strong); font:inherit; font-size:12px; cursor:pointer; }
+.phase button[aria-pressed=true] { background:var(--heritage-blue); color:white; }
+.line { display:flex; align-items:center; justify-content:space-between; gap:12px; font-size:12px; margin-bottom:14px; }
+.line select { min-width:110px; border:1px solid var(--border-strong); border-radius:5px; padding:8px; background:white; color:var(--graphite); font:inherit; }
+.legend { display:flex; justify-content:space-between; gap:10px; font-size:10px; color:var(--muted-strong); margin:8px 0; }
+.legend span:first-child { max-width:45%; }
+.outcomes { display:grid; gap:8px; }
+.matrix { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px; }
+.outcome { min-width:0; display:grid; grid-template-columns:1fr auto; gap:6px; padding:9px 0; border-bottom:1px solid var(--border); font-size:12px; }
+.outcome strong { font-variant-numeric:tabular-nums; color:var(--heritage-blue); }
+.outcome meter { width:100%; height:5px; grid-column:1/-1; accent-color:var(--action-blue); }
+.outcome small { grid-column:1/-1; line-height:1.6; }
+.matrix .outcome { grid-template-columns:1fr; padding:9px; background:var(--canvas); border:1px solid var(--border); border-radius:4px; font-size:10px; }
+.matrix strong { font-size:16px; }
+.note,.empty,.freshness { font-size:12px; line-height:1.7; color:var(--muted-strong); }
+.freshness { margin-top:0; }
+.panel footer { margin-top:14px; line-height:1.6; }
+.panel button:focus-visible,.panel select:focus-visible { outline:2px solid var(--action-blue); outline-offset:3px; }
+@media(max-width:500px) { .panel { padding:16px 0; } }

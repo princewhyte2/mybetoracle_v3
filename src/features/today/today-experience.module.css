@@ -3,6 +3,12 @@
   background: var(--canvas);
 }
 
+.marketPicker { min-width:0; max-width:100%; margin-left:auto; padding:9px 12px; background:var(--white); border:1px solid var(--border-strong); border-radius:5px; color:var(--graphite); font:inherit; font-size:12px; }
+.discoveryNote { font-size:12px; color:var(--muted-strong); margin:10px 0 0; line-height:1.6; }
+.valueEvidence { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; margin:0 0 18px; }
+.valueEvidence dt { font-size:10px; color:var(--muted-strong); }
+.valueEvidence dd { margin:6px 0 0; font-size:14px; font-weight:700; font-variant-numeric:tabular-nums; }
+
 .topbar {
   position: sticky;
   z-index: 50;
@@ -1976,3 +1982,5 @@
     transition-duration: 0.01ms !important;
   }
 }
+@media(max-width:900px) { .intelligenceRail { display:block; grid-column:1/-1; padding:16px; } .intelligenceRail .builderPanel,.intelligenceRail .performancePanel { display:none; } }
+@media(max-width:600px) { .marketSegments { flex-wrap:wrap; overflow:visible; } .marketPicker { flex-basis:100%; width:100%; margin:8px 0 0; } }

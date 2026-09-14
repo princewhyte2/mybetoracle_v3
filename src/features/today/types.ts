@@ -4,7 +4,7 @@ export const corePredictionMarkets = [
 export const predictionMarkets = [
   ...corePredictionMarkets,
   "DOUBLE_CHANCE", "TEAM_TO_SCORE", "TOTAL_1_5", "TOTAL_3_5",
-  "GOALS_BAND", "HALFTIME_RESULT", "CORNERS", "HANDICAP",
+  "GOALS_BAND", "HALFTIME_RESULT", "HALFTIME_FULLTIME", "CARDS", "CORNERS", "HANDICAP",
 ] as const;
 export type MatchState = "scheduled" | "live" | "finished";
 export type PredictionMarket = (typeof predictionMarkets)[number];
@@ -18,7 +18,14 @@ export type Team = {
   colors?: [string, string];
 };
 
+export type MarketSelection = { marketType: string; marketValue: string; probability: number; line?: number; countingRule?: string; selectionLabel?: string; selectionShortLabel?: string; result?: string; latestOdds?: Array<{ decimalOdds: number }>; distribution?: Record<string, number> };
+export type LivePrediction = { sourceObservedAt: string; generatedAt: string; sourceRevision: number; modelVersion: string; markets: Array<{ marketGroup: string; availability: string; reason: string | null; selections: MarketSelection[] }> };
+export type RankedSelection = { marketGroup: PredictionMarket; predictionId: string; selection: MarketSelection; valueAnalysis: NonNullable<OracleMarket['valueAnalysis']> };
 export type OracleMarket = {
+  probability?: number | null;
+  selections?: MarketSelection[];
+  evidence?: { samples?: { homeOverall?: number; awayOverall?: number }; reason?: string; countingRule?: string };
+  qualityTier?: string;
   valueAnalysis?: { probability: number; decimalOdds: number; edge: number; expectedValue: number; kellyScore: number; topPick: boolean; capturedAt: string } | null;
   predictionId: string | null;
   market: string;
@@ -34,6 +41,8 @@ export type OracleMarket = {
 };
 
 export type Match = {
+  livePrediction?: LivePrediction | null;
+  rankedSelection?: RankedSelection | null;
   id: string;
   slug: string | null;
   kickoff: string;
@@ -60,6 +69,7 @@ export type Competition = {
 };
 
 export type TodayData = {
+  ranking?: { version: string | null; availability: string; view: string } | null;
   dateIso: string;
   totalMatches: number;
   analyzedMatches: number | null;

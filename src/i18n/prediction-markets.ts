@@ -9,5 +9,14 @@ const labels: Record<Locale, Record<string, string>> = {
   pt: { REGULAR: 'Resultado', BTTS: 'Ambos marcam', TOTAL_2_5: 'O/U 2.5', MIXED: 'Misto', CORRECT_SCORE: 'Placar exato', ORACLE_PICK: 'Oracle Pick', DOUBLE_CHANCE: 'Dupla chance', TEAM_TO_SCORE: 'Time marca', TOTAL_1_5: 'O/U 1.5', TOTAL_3_5: 'O/U 3.5', GOALS_BAND: 'Linhas de gols', HALFTIME_RESULT: 'Resultado no intervalo', CORNERS: 'Escanteios 9,5', HANDICAP: 'Handicap ±1,5' },
 };
 export function predictionMarketLabel(locale: Locale, market: string): string {
-  return labels[locale][market] ?? '';
+  return expandedLabels[locale][market] ?? labels[locale][market] ?? '';
 }
+
+const expandedLabels: Record<Locale, Record<string,string>> = {
+  en: { HALFTIME_FULLTIME:'Half-time / Full-time', CARDS:'Cards', CORNERS:'Corners', HANDICAP:'Asian handicap' },
+  es: { HALFTIME_FULLTIME:'Descanso / Final', CARDS:'Tarjetas', CORNERS:'Córneres', HANDICAP:'Hándicap asiático' },
+  fr: { HALFTIME_FULLTIME:'Mi-temps / Fin du match', CARDS:'Cartons', CORNERS:'Corners', HANDICAP:'Handicap asiatique' },
+  de: { HALFTIME_FULLTIME:'Halbzeit / Spielende', CARDS:'Karten', CORNERS:'Ecken', HANDICAP:'Asiatisches Handicap' },
+  it: { HALFTIME_FULLTIME:'Primo tempo / Finale', CARDS:'Cartellini', CORNERS:'Corner', HANDICAP:'Handicap asiatico' },
+  pt: { HALFTIME_FULLTIME:'Intervalo / Final', CARDS:'Cartões', CORNERS:'Escanteios', HANDICAP:'Handicap asiático' },
+};
