@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import { Manrope, Sora } from "next/font/google";
-import { isLocale } from "@/i18n/config";
+import { isLocale, type Locale } from "@/i18n/config";
 import { WebVitals } from "@/components/observability/web-vitals";
+import { AnalyticsProvider } from "@/components/observability/analytics-provider";
+import { CookieConsentBanner } from "@/components/legal/cookie-consent-banner";
 import "../globals.css";
 
 const manrope = Manrope({
@@ -23,9 +25,15 @@ export const metadata: Metadata = {
 
 export default async function LocaleRootLayout({ children, params }: LayoutProps<"/[locale]">) {
   const { locale } = await params;
+  const safeLocale: Locale = isLocale(locale) ? locale : "en";
   return (
-    <html lang={isLocale(locale) ? locale : "en"}>
-      <body className={`${manrope.variable} ${sora.variable}`}>{children}<WebVitals /></body>
+    <html lang={safeLocale}>
+      <body className={`${manrope.variable} ${sora.variable}`}>
+        {children}
+        <WebVitals />
+        <AnalyticsProvider />
+        <CookieConsentBanner locale={safeLocale} />
+      </body>
     </html>
   );
 }

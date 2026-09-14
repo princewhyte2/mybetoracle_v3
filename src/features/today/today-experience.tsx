@@ -1,5 +1,7 @@
 "use client";
 
+import { predictionMarketLabel } from "@/i18n/prediction-markets";
+
 import {
   Activity,
   BarChart3,
@@ -41,13 +43,15 @@ import { locales, localeNames, type Locale } from "@/i18n/config";
 import { getMessages, localeTags } from "@/i18n/messages";
 import { withMultiPickTerminology } from "@/i18n/multi-pick-terminology";
 import { systemLabels } from "@/i18n/system-labels";
+import { AnalyticsEvents } from "@/lib/analytics/events";
 import { interpolate, todayLabels, type TodayLabels } from "./labels";
 import { translateInsight } from "./insights";
+import { valueMarket } from "./value-picks";
 import type { Competition, Match, OracleMarket, PredictionMarket, Team, TipOutcome, TodayData } from "./types";
 import styles from "./today-experience.module.css";
 
 type Filter = "all" | "live" | "oracle" | "following";
-type PredictionLens = "best" | Exclude<PredictionMarket, "ORACLE_PICK">;
+type PredictionLens = "best" | "value" | "top" | Exclude<PredictionMarket, "ORACLE_PICK">;
 function stateForLiveCode(code: string): Match["state"] { if (["FT", "AET", "PEN"].includes(code)) return "finished"; if (["NS", "TBD", "PST", "CANC", "ABD", "AWD", "WO"].includes(code)) return "scheduled"; return "live"; }
 
 function mergeTodayFeed(current: TodayData, next: TodayData): TodayData {
@@ -79,7 +83,18 @@ const marketOptions = [
   { value: "BTTS", text: "GG/NG" },
   { value: "TOTAL_2_5", text: "O/U 2.5" },
   { value: "CORRECT_SCORE", text: "Correct Score" },
+  { value: "DOUBLE_CHANCE", text: "Double Chance" },
+  { value: "TEAM_TO_SCORE", text: "Team To Score" },
+  { value: "TOTAL_1_5", text: "O/U 1.5" },
+  { value: "TOTAL_3_5", text: "O/U 3.5" },
+  { value: "GOALS_BAND", text: "Goals band" },
+  { value: "HALFTIME_RESULT", text: "Half-time" },
+  { value: "CORNERS", text: "Corners" },
+  { value: "HANDICAP", text: "Handicap" },
+  { value: "value", text: "Value" },
+  { value: "top", text: "Top Picks" },
 ] as const;
+
 
 const showMoreLabels: Record<Locale, string> = {
   en: "Show more competitions",
@@ -88,6 +103,12 @@ const showMoreLabels: Record<Locale, string> = {
   de: "Weitere Wettbewerbe anzeigen",
   it: "Mostra altre competizioni",
   pt: "Mostrar mais competições",
+};
+
+const valueViewLabels: Record<Locale, Record<string, string>> = {
+  en: { value: 'Value', top: 'Top Picks' }, es: { value: 'Valor', top: 'Selecciones destacadas' },
+  fr: { value: 'Valeur', top: 'Meilleures sélections' }, de: { value: 'Value-Chancen', top: 'Top-Auswahl' },
+  it: { value: 'Valore', top: 'Migliori selezioni' }, pt: { value: 'Valor', top: 'Melhores seleções' },
 };
 
 const navItems = [
@@ -137,11 +158,14 @@ function OracleGauge({ score, compact = false }: { score: number; compact?: bool
 }
 
 function resolveMarketKey(match: Match, lens: PredictionLens): PredictionMarket {
+  if (lens === 'value' || lens === 'top') return valueMarket(match, lens === 'top') ?? 'ORACLE_PICK';
   return lens === "best" ? "ORACLE_PICK" : lens;
 }
 
 function getMarket(match: Match, lens: PredictionLens): OracleMarket {
-  return match.markets[resolveMarketKey(match, lens)];
+  const market = match.markets[resolveMarketKey(match, lens)];
+  if ((lens === 'value' || lens === 'top') && market.valueAnalysis) return { ...market, odds: String(market.valueAnalysis.decimalOdds) };
+  return market;
 }
 
 function getPickKey(match: Match, lens: PredictionLens) {
@@ -328,6 +352,10 @@ export function TodayExperience({ data, locale }: { data: TodayData; locale: Loc
   const [added, setAdded] = useState(new Set<string>());
   const [collapsed, setCollapsed] = useState(new Set<string>());
   const [selectedMatch, setSelectedMatch] = useState<Match>(() => data.oraclePick ?? allMatches.find((match) => match.id === data.oraclePickId) ?? allMatches[0]!);
+  useEffect(() => {
+    const fixtureCount = data.competitions.reduce((total, competition) => total + competition.matches.length, 0);
+    void AnalyticsEvents.todayViewed({ locale, date: data.dateIso.slice(0, 10), fixtureCount });
+  }, [data, locale]);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [visibleCompetitionCount, setVisibleCompetitionCount] = useState(20);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -431,11 +459,11 @@ export function TodayExperience({ data, locale }: { data: TodayData; locale: Loc
             (filter === "live" && match.state === "live") ||
             (filter === "oracle" && match.oracleScore >= 80) ||
             (filter === "following" && followed.has(match.id));
-          return matchesFilter;
+          return matchesFilter && (marketLens !== 'value' && marketLens !== 'top' || valueMarket(match, marketLens === 'top') !== null);
         }),
       }))
       .filter((competition) => competition.matches.length > 0);
-  }, [feed.competitions, filter, followed]);
+  }, [feed.competitions, filter, followed, marketLens]);
 
   const visibleCompetitions = filteredCompetitions.slice(0, visibleCompetitionCount);
 
@@ -718,17 +746,17 @@ export function TodayExperience({ data, locale }: { data: TodayData; locale: Loc
 
           <section className={styles.marketLens} aria-label={copy.predictionMarket}>
             <div className={styles.marketSegments} role="tablist" aria-label={copy.marketFamilies}>
-              {marketOptions.map((option) => (
+              {marketOptions.filter(option => ['best', 'value', 'top', 'MIXED', 'REGULAR', 'BTTS', 'TOTAL_2_5', 'CORRECT_SCORE'].includes(option.value) || allMatches.some(match => match.markets[option.value as PredictionMarket]?.available)).map((option) => (
                 <button
                   key={option.value}
                   className={marketLens === option.value ? styles.marketSegmentActive : ""}
                   onClick={() => setMarketLens(option.value)}
                   role="tab"
                   aria-selected={marketLens === option.value}
-                  title={"title" in option ? copy[option.title] : option.text}
+                  title={"title" in option ? copy[option.title] : valueViewLabels[locale][option.value] ?? (predictionMarketLabel(locale, option.value) || option.text)}
                 >
                   {option.value === "best" && <Sparkles size={14} />}
-                  <span>{"label" in option ? copy[option.label] : option.text}</span>
+                  <span>{"label" in option ? copy[option.label] : valueViewLabels[locale][option.value] ?? (predictionMarketLabel(locale, option.value) || option.text)}</span>
                 </button>
               ))}
             </div>

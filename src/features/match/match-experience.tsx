@@ -1,5 +1,7 @@
 "use client";
 
+import { predictionMarketLabel } from "@/i18n/prediction-markets";
+
 import {
   BarChart3,
   Bell,
@@ -110,7 +112,7 @@ function StreakColumn({ team, streaks, locale, copy }: { team: MatchDetailTeam; 
   );
 }
 
-function OraclePanel({ match, copy, outcomes }: { match: MatchDetail; copy: MatchLabels; outcomes: { won: string; lost: string; void: string } }) {
+function OraclePanel({ match, copy, outcomes, locale }: { match: MatchDetail; copy: MatchLabels; locale: Locale; outcomes: { won: string; lost: string; void: string } }) {
   return (
     <section className={styles.oraclePanel}>
       <header><span><Sparkles size={15} /> {copy.oracleDecision}</span><small>{copy.preMatch}</small></header>
@@ -119,7 +121,7 @@ function OraclePanel({ match, copy, outcomes }: { match: MatchDetail; copy: Matc
         <div className={styles.oraclePick}><span>{match.oracleMarket.market}</span><h2>{match.oracleMarket.selection}</h2></div></>}
         {match.oracleMarket.available && match.oracleMarket.odds !== null && <div className={styles.oracleAction}><span>{copy.referenceOdds}</span><strong>{match.oracleMarket.odds}</strong>{SHOW_MATCH_ADD_TO_PICKS && <button><Plus size={16} /> {copy.myPicks}</button>}</div>}
       </div>}
-      <div className={styles.predictionGrid}>{match.predictions.filter(prediction => prediction.available).map((prediction) => <div key={prediction.market} data-outcome={prediction.outcome}><span>{prediction.market}</span><strong>{prediction.selection}</strong><small>{prediction.outcome ? outcomes[prediction.outcome] : `${prediction.confidence}/100${prediction.odds ? ` · ${prediction.odds}` : ""}`}</small></div>)}</div>
+      <div className={styles.predictionGrid}>{match.predictions.filter(prediction => prediction.available).map((prediction) => <div key={prediction.market} data-outcome={prediction.outcome}><span>{predictionMarketLabel(locale, prediction.market)}</span><strong>{prediction.selection}</strong><small>{prediction.outcome ? outcomes[prediction.outcome] : `${prediction.confidence}/100${prediction.odds ? ` · ${prediction.odds}` : ""}`}</small></div>)}</div>
       <div className={styles.evidenceStrip}>{match.evidence.map((item) => <span key={item}><Database size={13} /> {item}</span>)}</div>
     </section>
   );
@@ -313,7 +315,7 @@ export function MatchExperience({ match: initialMatch, locale }: { match: MatchD
 
           <div className={styles.contentStack}>
             {activeTab === "overview" && <TimelineSection match={match} locale={locale} copy={copy} />}
-            {visibleSections.oracle && (activeTab === "overview" || activeTab === "oracle") && <OraclePanel match={match} copy={copy} outcomes={outcomes} />}
+            {visibleSections.oracle && (activeTab === "overview" || activeTab === "oracle") && <OraclePanel match={match} copy={copy} outcomes={outcomes} locale={locale} />}
             {activeTab === "overview" && visibleSections.streaks && <StreakSection match={match} locale={locale} copy={copy} onOpen={() => navigate(`streaks?teamId=${encodeURIComponent(match.home.id)}`)} />}
             {(activeTab === "stats" || (activeTab === "overview" && match.availability.statistics==="available")) && <StatsSection match={match} locale={locale} copy={copy} />}
             {(activeTab === "overview" || activeTab === "h2h") && <H2HSection match={match} locale={locale} copy={copy} />}

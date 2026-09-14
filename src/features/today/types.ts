@@ -1,5 +1,10 @@
-export const predictionMarkets = [
+export const corePredictionMarkets = [
   "REGULAR", "BTTS", "TOTAL_2_5", "MIXED", "CORRECT_SCORE", "ORACLE_PICK",
+] as const;
+export const predictionMarkets = [
+  ...corePredictionMarkets,
+  "DOUBLE_CHANCE", "TEAM_TO_SCORE", "TOTAL_1_5", "TOTAL_3_5",
+  "GOALS_BAND", "HALFTIME_RESULT", "CORNERS", "HANDICAP",
 ] as const;
 export type MatchState = "scheduled" | "live" | "finished";
 export type PredictionMarket = (typeof predictionMarkets)[number];
@@ -14,6 +19,7 @@ export type Team = {
 };
 
 export type OracleMarket = {
+  valueAnalysis?: { probability: number; decimalOdds: number; edge: number; expectedValue: number; kellyScore: number; topPick: boolean; capturedAt: string } | null;
   predictionId: string | null;
   market: string;
   marketType: string | null;

@@ -1,5 +1,6 @@
 export type SettledResult = "WON" | "LOST" | "VOID";
-export const marketGroups = ["REGULAR", "BTTS", "TOTAL_2_5", "MIXED", "CORRECT_SCORE", "ORACLE_PICK"] as const;
+import { predictionMarkets } from '../today/types';
+export const marketGroups = predictionMarkets;
 export type MarketGroup = (typeof marketGroups)[number];
 
 export type SettledPrediction = {
