@@ -30,7 +30,7 @@ export class DiscoveryDataError extends Error {
   constructor(readonly code: string) { super(code); }
 }
 
-const marketPresentation: Record<string, { slug: string; name: string; shortName: string }> = {
+export const marketPresentation: Record<string, { slug: string; name: string; shortName: string }> = {
   MIXED: { slug: "mixed", name: "Mixed Markets", shortName: "Mixed" },
   REGULAR: { slug: "match-result", name: "Match Result", shortName: "1X2" },
   DOUBLE_CHANCE: { slug: "double-chance", name: "Double Chance", shortName: "DC" },
@@ -46,6 +46,17 @@ const marketPresentation: Record<string, { slug: string; name: string; shortName
   CARDS: { slug: "cards", name: "Cards", shortName: "Cards" },
   TEAM_TO_SCORE: { slug: "team-to-score", name: "Team to Score", shortName: "TTS" },
 };
+
+const marketGroupBySlug = new Map(
+  Object.entries(marketPresentation).map(([group, presentation]) => [presentation.slug, group]),
+);
+// MIXED and ORACLE_PICK are internal aggregate views, not real bookmaker
+// market types -- excluded from the scope x market fanout pages, which
+// exist to mirror Forebet/PredictZ's per-market-type crawlable pages.
+export function marketGroupForSlug(slug: string): string | null {
+  if (slug === "mixed" || slug === "oracle-best") return null;
+  return marketGroupBySlug.get(slug) ?? null;
+}
 
 function isObject(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === "object" && !Array.isArray(value);

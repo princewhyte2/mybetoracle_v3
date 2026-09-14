@@ -342,7 +342,7 @@ function CompetitionBlock({
   );
 }
 
-export function TodayExperience({ data, locale }: { data: TodayData; locale: Locale }) {
+export function TodayExperience({ data, locale, scope = "today" }: { data: TodayData; locale: Locale; scope?: "today" | "tomorrow" }) {
   const router = useRouter();
   const [feed, setFeed] = useState(data);
   const [allFeed, setAllFeed] = useState(data);
@@ -646,7 +646,7 @@ export function TodayExperience({ data, locale }: { data: TodayData; locale: Loc
         <main className={styles.main}>
           <div className={styles.pageHeader}>
             <div>
-              <h1>{copy.todayMatches}</h1>
+              <h1>{scope === "tomorrow" ? copy.tomorrowMatches : copy.todayMatches}</h1>
               <p>{feed.analyzedMatches === null ? feed.totalMatches : `${feed.analyzedMatches} ${copy.analyzed} · ${feed.totalMatches}`} {common.fixtures}</p>
             </div>
             <div className={styles.headerActions}>

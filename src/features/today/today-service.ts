@@ -72,3 +72,5 @@ export async function getTodayData({ date, locale, page = 1, cursor, view = "all
   try { return mapResponse(parseResponse(await response.json()), locale); } catch (error) { if (error instanceof TodayFeedError) throw error; throw new TodayFeedError("TODAY_INVALID_RESPONSE"); }
 }
 export function lagosDate(now = new Date()) { const parts = new Intl.DateTimeFormat("en", { timeZone: "Africa/Lagos", year: "numeric", month: "2-digit", day: "2-digit" }).formatToParts(now); const value = Object.fromEntries(parts.map(({ type, value }) => [type, value])); return `${value.year}-${value.month}-${value.day}`; }
+// Africa/Lagos carries no DST, so a fixed 24h offset from "now" always lands on the correct next calendar day in that zone.
+export function tomorrowLagosDate(now = new Date()) { return lagosDate(new Date(now.getTime() + 24 * 60 * 60 * 1000)); }
