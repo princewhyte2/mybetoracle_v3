@@ -713,13 +713,24 @@ export function TodayExperience({ data, locale }: { data: TodayData; locale: Loc
 
           <section className={styles.marketLens} aria-label={copy.predictionMarket}>
             <div className={styles.marketSegments} role="tablist" aria-label={copy.marketFamilies}>
-              {(['best','top','value'] as const).map(value=><button key={value} className={(value==='best'?discovery==='all':discovery===value)?styles.marketSegmentActive:''} onClick={()=>{setFilter('all');setMarketLens(value==='best'?(marketFilter?marketFilter as PredictionLens:'best'):value)}} role="tab" aria-selected={value==='best'?discovery==='all':discovery===value}>{value==='best'?intelligenceCopy(locale)[22]:valueViewLabels[locale][value]}</button>)}
-              <select className={styles.marketPicker} aria-label={copy.predictionMarket} value={marketFilter} onChange={event=>{setMarketFilter(event.target.value);if(discovery==='all')setMarketLens(event.target.value?event.target.value as PredictionLens:'best')}}>
-                <option value="">{copy.predictionMarket}</option>
-                {marketOptions.filter(option=>!['best','top','value'].includes(option.value)).map(option=><option key={option.value} value={option.value}>{predictionMarketLabel(locale,option.value)}</option>)}
-              </select>
+              {marketOptions.map(option => (
+                <button
+                  key={option.value}
+                  type="button"
+                  className={marketLens === option.value ? styles.marketSegmentActive : ""}
+                  role="tab"
+                  aria-selected={marketLens === option.value}
+                  onClick={() => {
+                    if (option.value === "top" || option.value === "value") setFilter("all");
+                    else setMarketFilter(option.value === "best" ? "" : option.value);
+                    setMarketLens(option.value);
+                  }}
+                >
+                  {option.value === "best" && <Sparkles size={14} />}
+                  <span>{"label" in option ? copy[option.label] : valueViewLabels[locale][option.value] ?? predictionMarketLabel(locale, option.value)}</span>
+                </button>
+              ))}
             </div>
-            {discovery!=="all" && <p className={styles.discoveryNote}>{intelligenceCopy(locale)[feed.ranking?.availability === "NOT_GENERATED" ? 26 : discovery==="top"?20:21]}</p>}
           </section>
 
           <div className={styles.feedMeta}>
