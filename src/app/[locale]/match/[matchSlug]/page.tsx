@@ -22,7 +22,9 @@ export async function generateMetadata({ params }: PageProps<"/[locale]/match/[m
   const origin = process.env.NEXT_PUBLIC_SITE_URL || "https://www.mybetoracle.com";
   const canonical = `${origin}${match.canonicalPath}`;
   const localizedMatches = await Promise.all(locales.map(async (item) => [item, await resolved(matchSlug, item)] as const));
-  const languages = Object.fromEntries(localizedMatches.map(([item, localized]) => [item, `${origin}${localized.canonicalPath}`]));
+  const languages: Record<string, string> = Object.fromEntries(localizedMatches.map(([item, localized]) => [item, `${origin}${localized.canonicalPath}`]));
+  const enMatch = localizedMatches.find(([item]) => item === "en")?.[1];
+  if (enMatch) languages["x-default"] = `${origin}${enMatch.canonicalPath}`;
   const images = [match.home.emblemUrl, match.away.emblemUrl].filter((value): value is string => Boolean(value));
   return { title, description, alternates: { canonical, languages }, openGraph: { title, description, url: canonical, type: "website", ...(images.length ? { images } : {}) }, robots: { index: true, follow: true } };
 }

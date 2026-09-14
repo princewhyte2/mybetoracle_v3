@@ -8,7 +8,7 @@ export function localizedMetadata(locale:Locale,path:string,title:string,descrip
     title:fullTitle,
     ...(description ? {description} : {}),
     ...(!index ? {robots:{index:false,follow:true}} : {}),
-    alternates:{canonical,languages:Object.fromEntries(locales.map(item=>[item,`https://www.mybetoracle.com/${item}/${path}`]))},
+    alternates:{canonical,languages:{...Object.fromEntries(locales.map(item=>[item,`https://www.mybetoracle.com/${item}/${path}`])),"x-default":`https://www.mybetoracle.com/en/${path}`}},
     ...(description ? {openGraph:{type:"website",url:canonical,title:fullTitle,description,siteName:"MyBetOracle"},twitter:{card:"summary_large_image",title:fullTitle,description}} : {}),
   };
 }

@@ -14,7 +14,7 @@ const orDrawUnder: Record<Locale, string> = {
   de: "{team} oder Unentschieden + unter {line}", it: "{team} o pareggio + under {line}", pt: "{team} ou empate + menos de {line}",
 };
 
-function fill(template:string, values:Record<string,string>) { return Object.entries(values).reduce((text,[key,value])=>text.replaceAll(`{${key}}`,value),template); }
+export function fill(template:string, values:Record<string,string>) { return Object.entries(values).reduce((text,[key,value])=>text.replaceAll(`{${key}}`,value),template); }
 
 export function translateMarketSelection(locale:Locale, selection:string) {
   if (locale === "en") return selection;

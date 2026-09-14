@@ -16,15 +16,18 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     })),
   );
   try {
-    const data = await getDiscoveryData({ locale: "en" });
-    const entities = [
-      ...data.competitions.map((item) => `competitions/${item.slug}`),
-      ...data.teams.map((item) => `teams/${item.slug}`),
-      ...data.countries.map((item) => `countries/${item.slug}`),
-      ...data.markets.map((item) => `markets/${item.slug}`),
-    ];
+    const entityEntries = (await Promise.all(locales.map(async (locale) => {
+      const data = await getDiscoveryData({ locale });
+      const entities = [
+        ...data.competitions.map((item) => `competitions/${item.slug}`),
+        ...data.teams.map((item) => `teams/${item.slug}`),
+        ...data.countries.map((item) => `countries/${item.slug}`),
+        ...data.markets.map((item) => `markets/${item.slug}`),
+      ];
+      return entities.map((path) => ({ url: `${origin}/${locale}/${path}`, lastModified, changeFrequency: "daily" as const, priority: 0.7 }));
+    }))).flat();
     const matches = await matchEntries(origin);
-    return [...staticEntries, ...entities.map((path) => ({ url: `${origin}/en/${path}`, lastModified, changeFrequency: "daily" as const, priority: 0.7 })), ...matches];
+    return [...staticEntries, ...entityEntries, ...matches];
   } catch {
     return [...staticEntries, ...(await matchEntries(origin).catch(() => []))];
   }

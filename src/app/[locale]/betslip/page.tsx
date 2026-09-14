@@ -4,7 +4,7 @@ import { ReceiptText } from "lucide-react";
 import { BetslipExperience } from "@/features/betslip/localized-betslip-experience";
 import { getOracleDailyData, OracleDailyFeedError } from "@/features/betslip/betslip-service";
 import { lagosProductDate } from "@/features/accumulators/multi-picks-service";
-import { isLocale, locales } from "@/i18n/config";
+import { isLocale, locales, type Locale } from "@/i18n/config";
 import { betslipLabels } from "@/features/betslip/labels";
 import { localizedMetadata } from "@/i18n/localized-metadata";
 import { withMultiPickTerminology } from "@/i18n/multi-pick-terminology";
@@ -32,7 +32,8 @@ export default async function BetslipPage({ params, searchParams }: PageProps<"/
   return <BetslipExperience data={data} locale={locale} />;
 }
 
-function OracleDailyState({ locale, date, reason }: { locale: string; date: string; reason: string }) {
+function OracleDailyState({ locale, date, reason }: { locale: Locale; date: string; reason: string }) {
   const serviceFailure = reason !== "no_eligible_publication";
-  return <main className={stateStyles.state}><section className={stateStyles.card}><div className={stateStyles.mark}><ReceiptText /></div><span>ORACLE DAILY · {date}</span><h1>{serviceFailure ? "Oracle Daily is temporarily unavailable" : "No Oracle Daily publication today"}</h1><p>{serviceFailure ? "The verified publication could not be retrieved safely. Nothing unverified will be shown in its place." : "No combination met the strict 3.00–3.99 publication standard. The thresholds remain unchanged."}</p><nav><Link href={`/${locale}/today`}>View today&apos;s matches</Link><Link href={`/${locale}/multi-picks`}>Open Multi-Picks</Link></nav></section></main>;
+  const c = betslipLabels[locale];
+  return <main className={stateStyles.state}><section className={stateStyles.card}><div className={stateStyles.mark}><ReceiptText /></div><span>ORACLE DAILY · {date}</span><h1>{serviceFailure ? c.unavailableTitle : c.noPublicationTitle}</h1><p>{serviceFailure ? c.unavailableHelp : c.noPublicationHelp}</p><nav><Link href={`/${locale}/today`}>{c.viewTodaysMatches}</Link><Link href={`/${locale}/multi-picks`}>{c.openMultiPicks}</Link></nav></section></main>;
 }

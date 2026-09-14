@@ -545,22 +545,25 @@ common, costly way real sites misdiagnose ranking problems:
   currently uses it for Bing/Yandex. Don't assume IndexNow submission is
   doing anything for Google rankings specifically; it's a real, separate,
   worthwhile channel, not a Google-indexing shortcut.
-- **International targeting**: if any locale is meant to target a specific
+- **International targeting — correction, verified 2026-09-14**: Google
+  Search Console's International Targeting report is **deprecated**
+  (confirmed directly: [Google Support — International Targeting report
+  deprecated](https://support.google.com/webmasters/answer/12474899?hl=en)).
+  An earlier draft of this document recommended it as the mechanism to
+  confirm country targeting — that's no longer correct and is struck here.
+  Google now relies entirely on hreflang, content-language analysis, and
+  linking patterns for country targeting; there is no longer a GSC report
+  that directly confirms it. If any locale is meant to target a specific
   country rather than just a language (exactly what §1's `geoSeoConfig.ts`
-  country-hub pages do), Google Search Console's International Targeting
-  report (under Legacy tools, or via `hreflang` region-specific codes like
-  `fr-SN` rather than bare `fr`) is the mechanism to confirm Google
-  understands the intended country targeting, separate from language
-  targeting. V2's current geo-hub `hreflang` (per `getGeoPageAlternates`)
-  uses bare locale codes (`fr`, `pt`) without a region subtag even though
-  the pages are genuinely country-specific (Senegal vs Côte d'Ivoire vs
-  Cameroun, all `fr`) — this is a real, second-order technical detail
-  worth deciding on purpose for V3's version of this system: either adopt
-  region-specific hreflang codes (`fr-SN`, `fr-CI`, `fr-CM`) for genuinely
-  country-targeted pages, or rely on on-page content/schema signals alone
-  and accept bare-language hreflang as sufficient. Not flagged as urgent,
-  flagged as a real decision point worth making explicitly rather than
-  defaulting into unexamined.
+  country-hub pages do), the real, current mechanism is still
+  region-specific hreflang codes (`fr-SN`, `fr-CI`, `fr-CM` rather than
+  bare `fr`) plus genuine on-page locale-specific signals (local currency,
+  phone formats, addresses where applicable — sourced guidance, see §5a).
+  V2's current geo-hub `hreflang` (per `getGeoPageAlternates`) uses bare
+  locale codes without a region subtag despite the pages being genuinely
+  country-specific — still a real, second-order decision worth making on
+  purpose for V3's version of this system, just via the corrected
+  mechanism above, not a now-nonexistent GSC report.
 - **IP-based personalization is a real UX idea with a real cloaking-
   adjacent caution attached.** Forebet's homepage auto-detects the
   visitor's country by IP and defaults the standings widget to that
@@ -577,6 +580,56 @@ common, costly way real sites misdiagnose ranking problems:
   fine; changing the core indexed content itself by IP is the pattern to
   avoid. Worth being precise about this distinction before implementing,
   not after.
+
+## 5a. Real hreflang audit against V3's actual code (2026-09-14) — mostly
+good news, one real gap
+
+Prompted by installing a sourced SEO-audit skill (`coreyhaines31/marketingskills`,
+verified legitimate and well-cited — Google Search Central docs, John
+Mueller quotes with sources, independently-run studies — before trusting
+it), its hreflang checklist was run directly against
+`src/i18n/localized-metadata.ts`, the real function every page's
+`generateMetadata` uses for canonical/hreflang tags.
+
+**Verified correct, by direct code reading, not assumed:**
+- **Self-referencing**: `languages` is built via
+  `Object.fromEntries(locales.map(...))` — this includes the *current*
+  locale in the set, satisfying Google's "every page must include itself"
+  requirement.
+- **Reciprocal**: every locale's entry is built from the same `path`
+  string, and V3 uses untranslated route segments across all locales
+  (confirmed earlier this session) — there's no risk of the path drifting
+  per locale the way a translated-route-segment system (like V2's) could
+  introduce, so reciprocity holds by construction, not by discipline.
+- **Canonical is in the hreflang set**: `canonical` is always
+  `/${locale}/${path}`, which is exactly one of the entries `languages`
+  produces — satisfies the rule that a missing canonical-in-set silently
+  invalidates the whole hreflang block.
+- **No cross-locale canonical**: canonical always points to the current
+  locale's own URL, never another locale's — the specific anti-pattern
+  Mueller warns kills indexing ("don't use rel=canonical across languages").
+- **The Next.js `alternates.languages`-doesn't-self-reference caveat found
+  in the skill's sourcing does not apply here** — that caveat is
+  specifically about `sitemap.ts`'s separate per-entry `alternates` field
+  (used to emit `<xhtml:link>` in the sitemap XML), not about
+  `generateMetadata`'s page-level `<head>` tags, which is what
+  `localized-metadata.ts` produces. V3's `sitemap.ts` doesn't declare
+  sitemap-level hreflang at all currently — **not a bug at 6 locales**;
+  the same sourcing explicitly says sitemap-based hreflang is only the
+  preferred method at 10+ locales, and page-level `<head>` hreflang (what
+  V3 has) is a fully equivalent, Google-supported method on its own.
+
+**Real gap found**: `languages` has no `x-default` key. `Object.fromEntries(locales.map(item=>[item,...]))`
+only ever produces the 6 real locale codes — there is no `"x-default"`
+entry anywhere in the object. Google's own docs (cited in the skill's
+sourcing) state x-default "must be included in the complete set of
+annotations on every variant page" — it's not optional decoration, it's
+part of what makes the hreflang cluster complete. **Fix**: add
+`"x-default": `https://www.mybetoracle.com/en/${path}`` (or a genuine
+language-selector URL, if one exists) to the `languages` object in
+`localized-metadata.ts` — a one-line, low-risk change affecting every page
+that already uses this shared helper, which per `V3_LOCALIZATION_STANDARD.md`
+is confirmed to be all of them.
 
 ## 6. Prioritized action list
 
@@ -636,6 +689,10 @@ theoretical importance:
     responsive build (§4.14) already avoids PredictZ's dual desktop/mobile
     anti-pattern — listed so it's never second-guessed later without
     checking this document first.
+17. **Add the missing `x-default` entry to `localized-metadata.ts`'s
+    `languages` object** (§5a) — one-line, low-risk, fixes a real,
+    sourced Google requirement missing from every page's hreflang set
+    today.
 
 ## 6a. If Wednesday is real: what actually has to happen by launch vs.
 what can follow
@@ -660,6 +717,8 @@ launch-blocking vs. post-launch:
   full rebuild by Wednesday) — even "V2's blog stays live post-cutover,
   V3 doesn't have one yet" is fine, as long as it's decided, not silently
   defaulted into a 404.
+- Item 17 — the `x-default` fix. One line, one shared helper, affects
+  every page at once — no reason this waits.
 
 **Real, valuable, and genuinely fine to follow launch (none of these
 block a correct, non-regressive Wednesday launch):**

@@ -38,6 +38,7 @@ import { getMessages } from "@/i18n/messages";
 import shellStyles from "@/features/today/today-experience.module.css";
 import type { MatchDetail, MatchDetailTeam, MatchStreak } from "./types";
 import { matchLabels, matchScopeLabel, matchStatLabel, type MatchLabels } from "./labels";
+import { buildTrendSentence } from "./trend-sentences";
 import styles from "./match-experience.module.css";
 import { PlayerStatistics } from "./player-statistics";
 import { LineupPitch } from "./lineup-pitch";
@@ -96,10 +97,12 @@ function FormStrip({ team, copy }: { team: MatchDetailTeam; copy: MatchLabels })
   );
 }
 
-function StreakColumn({ team, streaks, locale, copy }: { team: MatchDetailTeam; streaks: MatchStreak[]; locale: Locale; copy: MatchLabels }) {
+function StreakColumn({ team, streaks, scope, locale, copy }: { team: MatchDetailTeam; streaks: MatchStreak[]; scope: "HOME" | "AWAY"; locale: Locale; copy: MatchLabels }) {
+  const trendSentence = buildTrendSentence(team, streaks, scope, locale);
   return (
     <div className={styles.streakColumn}>
       <header><Crest team={team} /><div><strong>{team.name}</strong><span>{copy.relevantPatterns}</span></div></header>
+      {trendSentence && <p>{trendSentence}</p>}
       <div>
         {streaks.map((streak) => (
           <button key={streak.id} title={`${streak.sampleSize} ${copy.eligibleFixtures}`}>
@@ -133,7 +136,7 @@ function StreakSection({ match, onOpen, locale, copy }: { match: MatchDetail; on
   return (
     <section className={styles.contentSection}>
       <div className={styles.sectionHeading}><div><span>{copy.historicalEvidence}</span><h2>{copy.matchStreaks}</h2></div><button onClick={onOpen}>{copy.compareExplorer} <ChevronRight size={15} /></button></div>
-      <div className={styles.streakCompare}>{homeStreaks.length > 0 && <StreakColumn team={match.home} streaks={homeStreaks} locale={locale} copy={copy} />}{homeStreaks.length > 0 && awayStreaks.length > 0 && <div className={styles.compareDivider}>vs</div>}{awayStreaks.length > 0 && <StreakColumn team={match.away} streaks={awayStreaks} locale={locale} copy={copy} />}</div>
+      <div className={styles.streakCompare}>{homeStreaks.length > 0 && <StreakColumn team={match.home} streaks={homeStreaks} scope="HOME" locale={locale} copy={copy} />}{homeStreaks.length > 0 && awayStreaks.length > 0 && <div className={styles.compareDivider}>vs</div>}{awayStreaks.length > 0 && <StreakColumn team={match.away} streaks={awayStreaks} scope="AWAY" locale={locale} copy={copy} />}</div>
       <p className={styles.evidenceNote}>{copy.evidenceHistory}</p>
     </section>
   );

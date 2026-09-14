@@ -58,7 +58,7 @@ export async function discoveryEntityAlternates(
   const segment = kind === "competition" ? "competitions" : kind === "team" ? "teams" : kind === "country" ? "countries" : "markets";
   const origin = process.env.NEXT_PUBLIC_SITE_URL || "https://www.mybetoracle.com";
   if (kind === "market") {
-    return Object.fromEntries(locales.map((locale) => [locale, `${origin}/${locale}/${segment}/${requestedSlug}`]));
+    return { ...Object.fromEntries(locales.map((locale) => [locale, `${origin}/${locale}/${segment}/${requestedSlug}`])), "x-default": `${origin}/en/${segment}/${requestedSlug}` };
   }
   const id = kind === "country"
     ? requestedSlug.split("--").at(-1)?.toUpperCase() ?? null
@@ -74,5 +74,7 @@ export async function discoveryEntityAlternates(
       return null;
     }
   }));
-  return Object.fromEntries(resolved.filter((item): item is NonNullable<typeof item> => item !== null));
+  const languages = Object.fromEntries(resolved.filter((item): item is NonNullable<typeof item> => item !== null));
+  if (languages.en) languages["x-default"] = languages.en;
+  return languages;
 }

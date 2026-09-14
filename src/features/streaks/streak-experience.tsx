@@ -132,14 +132,14 @@ export function StreakExperience({ data, locale }: { data: StreakExplorerData; l
   type MetricView = { category?: undefined; metric: StreakMetric; label: string };
   type StreakView = MetricView | { category: StreakCategory; metric?: undefined; label: string };
   const primaryViews: MetricView[] = [
-    { metric: "WIN", label: locale === "en" ? "Wins" : metricShortLabel("WIN", locale) },
-    { metric: "LOSS", label: locale === "en" ? "Losses" : metricShortLabel("LOSS", locale) },
-    { metric: "OVER_2_5", label: "Over 2.5" },
-    { metric: "BTTS_YES", label: "GG" },
-    { metric: "BTTS_NO", label: "NG" },
+    { metric: "WIN", label: metricShortLabel("WIN", locale) },
+    { metric: "LOSS", label: metricShortLabel("LOSS", locale) },
+    { metric: "OVER_2_5", label: metricShortLabel("OVER_2_5", locale) },
+    { metric: "BTTS_YES", label: metricShortLabel("BTTS_YES", locale) },
+    { metric: "BTTS_NO", label: metricShortLabel("BTTS_NO", locale) },
   ];
   const secondaryViews: StreakView[] = [
-    { metric: "OVER_1_5", label: "Over 1.5" },
+    { metric: "OVER_1_5", label: metricShortLabel("OVER_1_5", locale) },
     { category: "firstHalf", label: copy.firstHalf },
   ];
   const exploreItems = [{label:copy.overview,route:"explore"},{label:copy.calendar,route:"calendar"},{label:copy.competitions,route:"competitions"},{label:copy.teams,route:"teams"},{label:copy.markets,route:"markets"},{label:copy.streaks,route:"streaks"}] as const;
