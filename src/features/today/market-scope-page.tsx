@@ -12,11 +12,13 @@ import { rankedViewForSlug, valueViewLabels } from "@/features/discovery/market-
 import { discoveryLabels } from "@/features/discovery/labels";
 import { isLocale, locales } from "@/i18n/config";
 import { localizedMetadata } from "@/i18n/localized-metadata";
-import { type MarketScope, marketSlugs, scopedHeading } from "./scoped-heading";
+import { systemLabels } from "@/i18n/system-labels";
+import { buildTodayItemListJsonLd } from "./today-jsonld";
+import { type MarketScope, marketSlugs, scopedHeading, scopedMarketDescription } from "./scoped-heading";
 import styles from "@/app/[locale]/today/page.module.css";
 
 export type { MarketScope };
-export { marketSlugs, scopedHeading };
+export { marketSlugs, scopedHeading, scopedMarketDescription };
 
 export function buildMarketScopeStaticParams() {
   return locales.flatMap((locale) => [...marketSlugs(), "value-picks", "top-picks"].map((marketSlug) => ({ locale, marketSlug })));
@@ -45,7 +47,7 @@ export async function buildMarketScopeMetadata(
   if (!group) return { robots: { index: false, follow: false } };
   const copy = discoveryLabels[locale];
   const marketName = ranked ? valueViewLabels[locale][ranked] : copy.marketNames[marketSlug] ?? marketPresentation[group]?.name ?? marketSlug;
-  const description = copy.marketDescriptions[marketSlug];
+  const description = scopedMarketDescription(locale, marketSlug, scope, copy.marketDescriptions[marketSlug]);
   const query = await searchParams;
   const page = pageNumber(query?.page);
   const date = scopeDate(query?.date, scope);
@@ -77,11 +79,39 @@ export async function MarketScopePage({ params, searchParams }: ScopeProps, scop
   if (errorCode || !data) return <ScopeState title={runtime.unavailableTitle} message={runtime.unavailableHelp} />;
   if (page > 1 && data.competitions.length === 0) notFound();
   const marketName = ranked ? valueViewLabels[locale][ranked] : discoveryLabels[locale].marketNames[marketSlug] ?? marketPresentation[group]?.name ?? marketSlug;
-  return <><TodayExperience key={`${locale}:${scope}:${marketSlug}:${date}:${page}`} data={data} locale={locale} scope={scope} initialMarket={ranked ?? (group === "ORACLE_PICK" ? "best" : group as Exclude<PredictionMarket, "ORACLE_PICK">)} heading={marketName} />
-    <nav aria-label={discoveryLabels[locale].fixtures} style={{ display: "flex", gap: "1rem", justifyContent: "center", padding: "1rem 1rem 5rem" }}>
-      {page > 1 && <Link prefetch={false} href={`/${locale}/${scope}/${marketSlug}?date=${date}&page=${page - 1}`}>← {page - 1}</Link>}
-      {data.pagination.hasMore && <Link prefetch={false} href={`/${locale}/${scope}/${marketSlug}?date=${date}&page=${page + 1}`}>{page + 1} →</Link>}
-    </nav></>;
+  const pageHeading = scopedHeading(locale, marketName, scope);
+  const origin = (process.env.NEXT_PUBLIC_SITE_URL || "https://www.mybetoracle.com").replace(/\/$/, "");
+  const jsonLd = buildTodayItemListJsonLd({ data, locale, origin });
+  const breadcrumb = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      { "@type": "ListItem", position: 1, name: scope === "tomorrow" ? systemLabels[locale].tomorrowPredictionsHeading : systemLabels[locale].todayPredictionsHeading, item: `${origin}/${locale}/${scope}` },
+      { "@type": "ListItem", position: 2, name: pageHeading, item: `${origin}/${locale}/${scope}/${marketSlug}` },
+    ],
+  };
+  const schemas = jsonLd ? [jsonLd, breadcrumb] : [breadcrumb];
+
+  return (
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(schemas).replace(/</g, "\\u003c") }}
+      />
+      <TodayExperience
+        key={`${locale}:${scope}:${marketSlug}:${date}:${page}`}
+        data={data}
+        locale={locale}
+        scope={scope}
+        initialMarket={ranked ?? (group === "ORACLE_PICK" ? "best" : group as Exclude<PredictionMarket, "ORACLE_PICK">)}
+        heading={pageHeading}
+      />
+      <nav aria-label={discoveryLabels[locale].fixtures} style={{ display: "flex", gap: "1rem", justifyContent: "center", padding: "1rem 1rem 5rem" }}>
+        {page > 1 && <Link prefetch={false} href={`/${locale}/${scope}/${marketSlug}?date=${date}&page=${page - 1}`}>← {page - 1}</Link>}
+        {data.pagination.hasMore && <Link prefetch={false} href={`/${locale}/${scope}/${marketSlug}?date=${date}&page=${page + 1}`}>{page + 1} →</Link>}
+      </nav>
+    </>
+  );
 }
 
 function ScopeState({ title, message }: { title: string; message: string }) {

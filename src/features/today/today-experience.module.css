@@ -343,7 +343,8 @@
   border-top: 1px solid var(--border);
 }
 
-.sidebarFooter button {
+.sidebarFooter button,
+.sidebarFooter a {
   display: flex;
   align-items: center;
   min-height: 35px;
@@ -354,6 +355,71 @@
   color: var(--muted-strong);
   font-size: 12px;
   text-align: left;
+  text-decoration: none;
+}
+
+.sidebarFooter button:hover,
+.sidebarFooter a:hover {
+  color: var(--graphite);
+  background: var(--canvas);
+  border-radius: 6px;
+}
+
+.feedFooterNav {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 16px 0 8px;
+}
+
+.skipToFooterLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--white);
+  color: var(--muted-strong);
+  font-size: 12px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.skipToFooterLink:hover {
+  background: var(--canvas);
+  color: var(--graphite);
+}
+
+.skipToFooterLink:focus-visible {
+  outline: 2px solid var(--action-blue);
+  outline-offset: 1px;
+}
+
+.resumeScrollButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: 6px;
+  border: 1px solid var(--action-blue);
+  background: var(--blue-mist);
+  color: var(--heritage-blue);
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.resumeScrollButton:hover {
+  background: var(--oracle-ice);
+}
+
+.resumeScrollButton:focus-visible {
+  outline: 2px solid var(--action-blue);
+  outline-offset: 1px;
 }
 
 .main {

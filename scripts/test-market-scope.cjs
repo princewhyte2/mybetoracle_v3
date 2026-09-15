@@ -10,6 +10,7 @@ function load(file, mocks = {}) {
 const presentation = load('src/features/discovery/market-presentation.ts');
 const { locales, isLocale } = load('src/i18n/config.ts');
 const labels = load('src/features/discovery/labels.ts');
+const systemLabels = load('src/i18n/system-labels.ts');
 const scoped = load('src/features/today/scoped-heading.ts', { '@/features/discovery/market-presentation': presentation });
 let calls = [], empty = false;
 const TodayExperience = () => null;
@@ -22,23 +23,31 @@ const moduleUnderTest = load('src/features/today/market-scope-page.tsx', {
     getTodayData: async query => { calls.push(query); return { totalMatches: empty ? 0 : 1, competitions: empty ? [] : [{ matches: [{}] }], pagination: { hasMore: false } } } },
   '@/features/discovery/discovery-service': presentation, '@/features/discovery/market-presentation': presentation,
   '@/features/discovery/labels': labels, '@/i18n/config': { locales, isLocale },
+  '@/i18n/system-labels': systemLabels,
+  './today-jsonld': { buildTodayItemListJsonLd: () => null },
   '@/i18n/localized-metadata': { localizedMetadata: (locale, route, title, description, index) => ({ locale, route, title, index }) },
   './scoped-heading': scoped, '@/app/[locale]/today/page.module.css': {},
 });
 const props = (marketSlug, locale='en', query={}) => ({ params: Promise.resolve({ locale, marketSlug }), searchParams: Promise.resolve(query) });
+function findExperience(page) {
+  const children = Array.isArray(page.props.children) ? page.props.children : [page.props.children];
+  return children.find(child => child?.type === TodayExperience);
+}
 test('all market routes initialize the existing Today component with the exact market in six locales', async () => {
   for (const locale of locales) for (const [group, item] of Object.entries(presentation.marketPresentation)) {
     const page = await moduleUnderTest.MarketScopePage(props(item.slug, locale), 'today');
-    assert.equal(page.props.children[0].type, TodayExperience);
-    assert.equal(page.props.children[0].props.initialMarket, group === 'ORACLE_PICK' ? 'best' : group);
+    const comp = findExperience(page);
+    assert.ok(comp, `TodayExperience missing for ${item.slug} in ${locale}`);
+    assert.equal(comp.props.initialMarket, group === 'ORACLE_PICK' ? 'best' : group);
     assert.equal(calls.at(-1).marketGroup, group);
   }
 });
 test('Value and Top use the same component and never inherit a market constraint', async () => {
   for (const view of ['value', 'top']) {
     const page = await moduleUnderTest.MarketScopePage(props(`${view}-picks`), 'today');
-    assert.equal(page.props.children[0].type, TodayExperience);
-    assert.equal(page.props.children[0].props.initialMarket, view);
+    const comp = findExperience(page);
+    assert.ok(comp, `TodayExperience missing for ${view}-picks`);
+    assert.equal(comp.props.initialMarket, view);
     assert.equal(calls.at(-1).view, view);
     assert.equal(calls.at(-1).marketGroup, undefined);
   }
@@ -47,7 +56,8 @@ test('empty Cards/Corners preserve the shell and are not indexable', async () =>
   empty = true;
   try { for (const slug of ['cards','corners']) {
     const page = await moduleUnderTest.MarketScopePage(props(slug), 'today');
-    assert.equal(page.props.children[0].type, TodayExperience);
+    const comp = findExperience(page);
+    assert.ok(comp, `TodayExperience missing for ${slug}`);
     assert.equal((await moduleUnderTest.buildMarketScopeMetadata(props(slug),'today')).index, false);
   } } finally { empty = false; }
 });

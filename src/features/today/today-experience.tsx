@@ -5,6 +5,7 @@ import { predictionMarketLabel } from "@/i18n/prediction-markets";
 import { marketPresentation, valueViewLabels } from "@/features/discovery/market-presentation";
 import { discoveryLabels } from "@/features/discovery/labels";
 import Link from "next/link";
+import { PageEditorial } from "@/components/editorial/page-editorial";
 
 import {
   Activity,
@@ -80,6 +81,24 @@ const SHOW_TODAY_ADD_TO_PICKS = false;
 const SHOW_TODAY_STANDINGS = false;
 const SHOW_TODAY_SORT = false;
 const SHOW_TODAY_COMPETITION_FOLLOWING = false;
+
+const footerJumpLabels: Record<Locale, string> = {
+  en: "Page information & links",
+  es: "Información de la página y enlaces",
+  fr: "Informations de la page et liens",
+  de: "Seiteninformationen und Links",
+  it: "Informazioni sulla pagina e link",
+  pt: "Informações da página e links",
+};
+
+const resumeScrollLabels: Record<Locale, string> = {
+  en: "Resume auto-loading",
+  es: "Reanudar carga automática",
+  fr: "Reprendre le chargement automatique",
+  de: "Automatisches Nachladen fortsetzen",
+  it: "Riprendi caricamento automatico",
+  pt: "Retomar carregamento automático",
+};
 
 const marketOptions = [
   { value: "best", label: "oracleBest", title: "oracleBestHelp" },
@@ -387,6 +406,7 @@ export function TodayExperience({ data, locale, scope = "today", heading, initia
   const [visibleCompetitionCount, setVisibleCompetitionCount] = useState(20);
   const [loadingMore, setLoadingMore] = useState(false);
   const [loadMoreFailed, setLoadMoreFailed] = useState(false);
+  const [autoScrollPaused, setAutoScrollPaused] = useState(false);
   const loadingView = false;
   const [viewFailed, setViewFailed] = useState(false);
   const [searchLoading, setSearchLoading] = useState(false);
@@ -484,13 +504,13 @@ export function TodayExperience({ data, locale, scope = "today", heading, initia
 
   useEffect(() => {
     const trigger = loadMoreTriggerRef.current;
-    if (!trigger || typeof IntersectionObserver === "undefined") return;
+    if (!trigger || autoScrollPaused || typeof IntersectionObserver === "undefined") return;
     const observer = new IntersectionObserver(([entry]) => {
       if (entry.isIntersecting && !loadingMore) trigger.click();
     }, { rootMargin: "500px 0px" });
     observer.observe(trigger);
     return () => observer.disconnect();
-  }, [feed.pagination.hasMore, filteredCompetitions.length, loadingMore, visibleCompetitionCount]);
+  }, [autoScrollPaused, feed.pagination.hasMore, filteredCompetitions.length, loadingMore, visibleCompetitionCount]);
 
   async function loadMoreFixtures() {
     if (loadingMore || !feed.pagination.hasMore || !feed.pagination.nextCursor) return;
@@ -664,8 +684,8 @@ export function TodayExperience({ data, locale, scope = "today", heading, initia
           </div>}
 
           <div className={styles.sidebarFooter}>
-            <button onClick={() => navigate("competitions")}><Globe2 size={17} /> {common.allCompetitions}</button>
-            <button onClick={() => navigate("responsible-play")}><ShieldCheck size={17} /> {common.responsiblePlay}</button>
+            <Link href={`/${locale}/competitions`} prefetch={false}><Globe2 size={17} /> {common.allCompetitions}</Link>
+            <Link href={`/${locale}/responsible-play`} prefetch={false}><ShieldCheck size={17} /> {common.responsiblePlay}</Link>
           </div>
         </aside>
 
@@ -822,6 +842,36 @@ export function TodayExperience({ data, locale, scope = "today", heading, initia
                 <span>{allMatches.length} / {feed.pagination.total}</span>
               </button>
             )}
+            <div className={styles.feedFooterNav}>
+              <a
+                href="#site-footer"
+                className={styles.skipToFooterLink}
+                onClick={() => setAutoScrollPaused(true)}
+              >
+                {footerJumpLabels[locale]} ↓
+              </a>
+              {autoScrollPaused && (
+                <button
+                  type="button"
+                  className={styles.resumeScrollButton}
+                  onClick={() => setAutoScrollPaused(false)}
+                >
+                  {resumeScrollLabels[locale]} ↑
+                </button>
+              )}
+            </div>
+            <PageEditorial
+              locale={locale}
+              scopeKey={
+                initialMarket !== "best"
+                  ? initialMarket === "top"
+                    ? "top-picks"
+                    : initialMarket === "value"
+                      ? "value-picks"
+                      : (marketPresentation[initialMarket]?.slug ?? initialMarket)
+                  : scope
+              }
+            />
           </div>
         </main>
 

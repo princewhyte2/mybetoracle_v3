@@ -4,6 +4,7 @@ import { isLocale, type Locale } from "@/i18n/config";
 import { WebVitals } from "@/components/observability/web-vitals";
 import { AnalyticsProvider } from "@/components/observability/analytics-provider";
 import { CookieConsentBanner } from "@/components/legal/cookie-consent-banner";
+import { SiteFooter } from "@/components/navigation/site-footer";
 import "../globals.css";
 
 const manrope = Manrope({
@@ -30,6 +31,7 @@ export default async function LocaleRootLayout({ children, params }: LayoutProps
     <html lang={safeLocale}>
       <body className={`${manrope.variable} ${sora.variable}`}>
         {children}
+        <SiteFooter locale={safeLocale} />
         <WebVitals />
         <AnalyticsProvider />
         <CookieConsentBanner locale={safeLocale} />
