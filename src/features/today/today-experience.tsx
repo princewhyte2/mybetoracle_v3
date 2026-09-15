@@ -22,9 +22,11 @@ import {
   ChevronRight,
   Clock3,
   Compass,
+  Flag,
   Globe2,
   Home,
   Languages,
+  LayoutGrid,
   ListFilter,
   LoaderCircle,
   Menu,
@@ -41,7 +43,7 @@ import {
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { MboMark } from "@/components/brand/brand-marks";
 import { MobileProductMenu } from "@/components/navigation/mobile-product-menu";
 import { locales, localeNames, type Locale } from "@/i18n/config";
@@ -102,23 +104,75 @@ const resumeScrollLabels: Record<Locale, string> = {
 
 const marketOptions = [
   { value: "best", label: "oracleBest", title: "oracleBestHelp" },
-  { value: "MIXED", text: "Mixed" }, { value: "REGULAR", text: "Regular" },
-  { value: "BTTS", text: "GG/NG" },
-  { value: "TOTAL_2_5", text: "O/U 2.5" },
-  { value: "CORRECT_SCORE", text: "Correct Score" },
+  { value: "top", text: "Top Picks" },
+  { value: "value", text: "Value" },
   { value: "DOUBLE_CHANCE", text: "Double Chance" },
-  { value: "TEAM_TO_SCORE", text: "Team To Score" },
+  { value: "TOTAL_2_5", text: "O/U 2.5" },
+  { value: "BTTS", text: "GG/NG" },
+  { value: "CORNERS", text: "Corners" },
+  { value: "CARDS", text: "Cards" },
+  { value: "REGULAR", text: "Regular" },
   { value: "TOTAL_1_5", text: "O/U 1.5" },
+  { value: "MIXED", text: "Mixed" },
+  { value: "HALFTIME_RESULT", text: "Half-time" },
+  { value: "CORRECT_SCORE", text: "Correct Score" },
   { value: "TOTAL_3_5", text: "O/U 3.5" },
   { value: "GOALS_BAND", text: "Goals band" },
-  { value: "HALFTIME_RESULT", text: "Half-time" },
-  { value: "HALFTIME_FULLTIME", text: "HT/FT" },
-  { value: "CARDS", text: "Cards" },
-  { value: "CORNERS", text: "Corners" },
   { value: "HANDICAP", text: "Handicap" },
-  { value: "value", text: "Value" },
-  { value: "top", text: "Top Picks" },
+  { value: "TEAM_TO_SCORE", text: "Team To Score" },
+  { value: "HALFTIME_FULLTIME", text: "HT/FT" },
 ] as const;
+
+const allMarketsLabels: Record<Locale, string> = {
+  en: "All Markets",
+  es: "Todos los mercados",
+  fr: "Tous les marchés",
+  de: "Alle Märkte",
+  it: "Tutti i mercati",
+  pt: "Todos os mercados",
+};
+
+const marketCategoryTitles: Record<Locale, Record<"featured" | "outcomes" | "goals" | "stats", string>> = {
+  en: { featured: "Curated & Value", outcomes: "Match Outcomes", goals: "Goals & Scores", stats: "Match Stats" },
+  es: { featured: "Destacados y valor", outcomes: "Resultados del partido", goals: "Goles y marcadores", stats: "Estadísticas del partido" },
+  fr: { featured: "En vedette et valeur", outcomes: "Résultats du match", goals: "Buts et scores", stats: "Statistiques du match" },
+  de: { featured: "Empfohlen & Value", outcomes: "Spielausgänge", goals: "Tore & Ergebnisse", stats: "Spielstatistiken" },
+  it: { featured: "In evidenza e valore", outcomes: "Esiti partita", goals: "Gol e punteggi", stats: "Statistiche partita" },
+  pt: { featured: "Destaques e valor", outcomes: "Resultados da partida", goals: "Gols e placares", stats: "Estatísticas da partida" },
+};
+
+const marketCategories = [
+  {
+    id: "featured" as const,
+    items: ["best", "top", "value"] as const,
+  },
+  {
+    id: "outcomes" as const,
+    items: ["DOUBLE_CHANCE", "REGULAR", "HALFTIME_RESULT", "HALFTIME_FULLTIME", "HANDICAP", "MIXED"] as const,
+  },
+  {
+    id: "goals" as const,
+    items: ["TOTAL_2_5", "BTTS", "TOTAL_1_5", "TOTAL_3_5", "CORRECT_SCORE", "GOALS_BAND", "TEAM_TO_SCORE"] as const,
+  },
+  {
+    id: "stats" as const,
+    items: ["CORNERS", "CARDS"] as const,
+  },
+] as const;
+
+function getMarketOptionHref(locale: Locale, scope: "today" | "tomorrow", value: PredictionLens, dateIso: string) {
+  const dateParam = `?date=${dateIso.slice(0, 10)}`;
+  if (value === "best") return `/${locale}/${scope}${dateParam}`;
+  if (value === "top" || value === "value") return `/${locale}/${scope}/${value}-picks${dateParam}`;
+  const presentation = marketPresentation[value];
+  return `/${locale}/${scope}/${presentation ? presentation.slug : value.toLowerCase()}${dateParam}`;
+}
+
+function getMarketOptionLabel(locale: Locale, value: PredictionLens, copy: TodayLabels) {
+  if (value === "best") return copy.oracleBest;
+  if (value === "top" || value === "value") return valueViewLabels[locale][value];
+  return predictionMarketLabel(locale, value);
+}
 
 
 const showMoreLabels: Record<Locale, string> = {
@@ -304,12 +358,97 @@ function MatchRow({
 // so both users and crawlers can move between these pages without relying
 // on the sitemap.
 
-function ScopeMarketNav({ locale, scope, common }: { locale: Locale; scope: "today" | "tomorrow"; common: Messages["common"] }) {
+function ScopeMarketNav({
+  locale,
+  scope,
+  marketLens,
+  dateIso,
+  common,
+}: {
+  locale: Locale;
+  scope: "today" | "tomorrow";
+  marketLens: PredictionLens;
+  dateIso: string;
+  common: Messages["common"];
+}) {
   const discoveryCopy = discoveryLabels[locale];
   return (
     <nav className={styles.scopeMarketNav} aria-label={discoveryCopy.predictions}>
-      <Link href={`/${locale}/today`} prefetch={false} aria-current={scope === "today" ? "page" : undefined} className={`${styles.scopeMarketLink} ${scope === "today" ? styles.scopeMarketLinkActive : ""}`}>{common.today}</Link>
-      <Link href={`/${locale}/tomorrow`} prefetch={false} aria-current={scope === "tomorrow" ? "page" : undefined} className={`${styles.scopeMarketLink} ${scope === "tomorrow" ? styles.scopeMarketLinkActive : ""}`}>{common.tomorrow}</Link>
+      <div className={styles.scopeNavDateLinks}>
+        <Link
+          href={`/${locale}/today`}
+          prefetch={false}
+          aria-current={scope === "today" && marketLens === "best" ? "page" : undefined}
+          className={`${styles.scopeMarketLink} ${scope === "today" && marketLens === "best" ? styles.scopeMarketLinkActive : ""}`}
+        >
+          {common.today}
+        </Link>
+        <Link
+          href={`/${locale}/tomorrow`}
+          prefetch={false}
+          aria-current={scope === "tomorrow" && marketLens === "best" ? "page" : undefined}
+          className={`${styles.scopeMarketLink} ${scope === "tomorrow" && marketLens === "best" ? styles.scopeMarketLinkActive : ""}`}
+        >
+          {common.tomorrow}
+        </Link>
+      </div>
+
+      <span className={styles.scopeMarketDivider} aria-hidden="true" />
+
+      <div className={styles.scopeMarketQuickPills}>
+        <Link
+          href={getMarketOptionHref(locale, scope, "top", dateIso)}
+          prefetch={false}
+          className={`${styles.scopeMarketQuickPill} ${marketLens === "top" ? styles.scopeMarketQuickPillActive : ""}`}
+          aria-current={marketLens === "top" ? "page" : undefined}
+        >
+          <Star size={12} />
+          <span>{valueViewLabels[locale].top}</span>
+        </Link>
+        <Link
+          href={getMarketOptionHref(locale, scope, "value", dateIso)}
+          prefetch={false}
+          className={`${styles.scopeMarketQuickPill} ${marketLens === "value" ? styles.scopeMarketQuickPillActive : ""}`}
+          aria-current={marketLens === "value" ? "page" : undefined}
+        >
+          <Sparkles size={12} />
+          <span>{valueViewLabels[locale].value}</span>
+        </Link>
+        <Link
+          href={getMarketOptionHref(locale, scope, "DOUBLE_CHANCE", dateIso)}
+          prefetch={false}
+          className={`${styles.scopeMarketQuickPill} ${marketLens === "DOUBLE_CHANCE" ? styles.scopeMarketQuickPillActive : ""}`}
+          aria-current={marketLens === "DOUBLE_CHANCE" ? "page" : undefined}
+        >
+          <span>{predictionMarketLabel(locale, "DOUBLE_CHANCE")}</span>
+        </Link>
+        <Link
+          href={getMarketOptionHref(locale, scope, "CORNERS", dateIso)}
+          prefetch={false}
+          className={`${styles.scopeMarketQuickPill} ${marketLens === "CORNERS" ? styles.scopeMarketQuickPillActive : ""}`}
+          aria-current={marketLens === "CORNERS" ? "page" : undefined}
+        >
+          <Flag size={12} />
+          <span>{predictionMarketLabel(locale, "CORNERS")}</span>
+        </Link>
+        <Link
+          href={getMarketOptionHref(locale, scope, "CARDS", dateIso)}
+          prefetch={false}
+          className={`${styles.scopeMarketQuickPill} ${marketLens === "CARDS" ? styles.scopeMarketQuickPillActive : ""}`}
+          aria-current={marketLens === "CARDS" ? "page" : undefined}
+        >
+          <span className={styles.cardsIconMini} aria-hidden="true" />
+          <span>{predictionMarketLabel(locale, "CARDS")}</span>
+        </Link>
+        <Link
+          href={getMarketOptionHref(locale, scope, "TOTAL_2_5", dateIso)}
+          prefetch={false}
+          className={`${styles.scopeMarketQuickPill} ${marketLens === "TOTAL_2_5" ? styles.scopeMarketQuickPillActive : ""}`}
+          aria-current={marketLens === "TOTAL_2_5" ? "page" : undefined}
+        >
+          <span>{predictionMarketLabel(locale, "TOTAL_2_5")}</span>
+        </Link>
+      </div>
     </nav>
   );
 }
@@ -416,11 +555,66 @@ export function TodayExperience({ data, locale, scope = "today", heading, initia
   const searchInputRef = useRef<HTMLInputElement>(null);
   const loadMoreTriggerRef = useRef<HTMLButtonElement>(null);
   const marketNavRef = useRef<HTMLElement>(null);
+  const allMarketsRef = useRef<HTMLDivElement>(null);
+  const [allMarketsOpen, setAllMarketsOpen] = useState(false);
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(true);
+
+  const updateScrollAffordance = useCallback(() => {
+    const el = marketNavRef.current;
+    if (!el) return;
+    setCanScrollLeft(el.scrollLeft > 6);
+    setCanScrollRight(el.scrollLeft + el.clientWidth < el.scrollWidth - 6);
+  }, []);
+
+  useEffect(() => {
+    const el = marketNavRef.current;
+    if (!el) return;
+    updateScrollAffordance();
+    el.addEventListener("scroll", updateScrollAffordance, { passive: true });
+    window.addEventListener("resize", updateScrollAffordance);
+    return () => {
+      el.removeEventListener("scroll", updateScrollAffordance);
+      window.removeEventListener("resize", updateScrollAffordance);
+    };
+  }, [updateScrollAffordance]);
+
   useEffect(() => {
     const nav = marketNavRef.current;
     const selected = nav?.querySelector<HTMLElement>('[aria-current="page"]');
-    if (nav && selected) nav.scrollLeft += selected.getBoundingClientRect().left - nav.getBoundingClientRect().left - 12;
-  }, [marketLens]);
+    if (nav && selected) {
+      const leftOffset = selected.getBoundingClientRect().left - nav.getBoundingClientRect().left - 16;
+      nav.scrollBy({ left: leftOffset, behavior: "smooth" });
+    }
+    updateScrollAffordance();
+  }, [marketLens, updateScrollAffordance]);
+
+  useEffect(() => {
+    if (!allMarketsOpen) return;
+    const handlePointerDown = (event: MouseEvent | TouchEvent) => {
+      if (allMarketsRef.current && !allMarketsRef.current.contains(event.target as Node)) {
+        setAllMarketsOpen(false);
+      }
+    };
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setAllMarketsOpen(false);
+    };
+    document.addEventListener("mousedown", handlePointerDown);
+    document.addEventListener("touchstart", handlePointerDown);
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("mousedown", handlePointerDown);
+      document.removeEventListener("touchstart", handlePointerDown);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [allMarketsOpen]);
+
+  const scrollMarketRail = (direction: "left" | "right") => {
+    const nav = marketNavRef.current;
+    if (!nav) return;
+    const distance = direction === "left" ? -240 : 240;
+    nav.scrollBy({ left: distance, behavior: "smooth" });
+  };
 
   useEffect(() => {
     const handleSearchShortcut = (event: KeyboardEvent) => {
@@ -702,7 +896,7 @@ export function TodayExperience({ data, locale, scope = "today", heading, initia
             </div>
           </div>
 
-          <ScopeMarketNav locale={locale} scope={scope} common={common} />
+          <ScopeMarketNav locale={locale} scope={scope} marketLens={marketLens} dateIso={feed.dateIso} common={common} />
 
           <label className={styles.mobileSearch}>
             <Search size={18} />
@@ -760,17 +954,101 @@ export function TodayExperience({ data, locale, scope = "today", heading, initia
           </section>
 
           <section className={styles.marketLens} aria-label={copy.predictionMarket}>
-            <nav ref={marketNavRef} className={styles.marketSegments} aria-label={copy.marketFamilies}>
-              {marketOptions.map(option => (
-                <Link key={option.value} prefetch={false} scroll={false}
-                  href={`/${locale}/${scope}${option.value === "best" ? "" : `/${option.value === "top" || option.value === "value" ? `${option.value}-picks` : marketPresentation[option.value].slug}`}?date=${feed.dateIso.slice(0,10)}`}
-                  className={marketLens === option.value ? styles.marketSegmentActive : ""}
-                  aria-current={marketLens === option.value ? "page" : undefined}>
-                  {option.value === "best" && <Sparkles size={14} />}
-                  <span>{option.value === "best" ? copy.oracleBest : option.value === "top" || option.value === "value" ? valueViewLabels[locale][option.value] : predictionMarketLabel(locale, option.value)}</span>
-                </Link>
-              ))}
-            </nav>
+            <div className={`${styles.marketRailContainer} ${canScrollLeft ? styles.hasScrollLeft : ""} ${canScrollRight ? styles.hasScrollRight : ""}`}>
+              {canScrollLeft && (
+                <button
+                  type="button"
+                  className={`${styles.marketScrollChevron} ${styles.marketScrollChevronLeft}`}
+                  onClick={() => scrollMarketRail("left")}
+                  aria-label={copy.previousDay}
+                  tabIndex={-1}
+                >
+                  <ChevronLeft size={16} />
+                </button>
+              )}
+
+              <nav ref={marketNavRef} className={styles.marketSegments} aria-label={copy.marketFamilies}>
+                {marketOptions.map((option) => (
+                  <Link
+                    key={option.value}
+                    prefetch={false}
+                    scroll={false}
+                    href={getMarketOptionHref(locale, scope, option.value, feed.dateIso)}
+                    className={marketLens === option.value ? styles.marketSegmentActive : ""}
+                    aria-current={marketLens === option.value ? "page" : undefined}
+                  >
+                    {option.value === "best" && <Sparkles size={14} />}
+                    {option.value === "top" && <Star size={13} />}
+                    {option.value === "value" && <Sparkles size={13} />}
+                    {option.value === "CORNERS" && <Flag size={13} />}
+                    {option.value === "CARDS" && <span className={styles.cardsIconMini} aria-hidden="true" />}
+                    <span>{getMarketOptionLabel(locale, option.value, copy)}</span>
+                  </Link>
+                ))}
+              </nav>
+
+              {canScrollRight && (
+                <button
+                  type="button"
+                  className={`${styles.marketScrollChevron} ${styles.marketScrollChevronRight}`}
+                  onClick={() => scrollMarketRail("right")}
+                  aria-label={copy.nextDay}
+                  tabIndex={-1}
+                >
+                  <ChevronRight size={16} />
+                </button>
+              )}
+            </div>
+
+            <div ref={allMarketsRef} className={styles.allMarketsWrapper}>
+              <button
+                type="button"
+                className={`${styles.allMarketsToggle} ${allMarketsOpen ? styles.allMarketsToggleOpen : ""}`}
+                onClick={() => setAllMarketsOpen((prev) => !prev)}
+                aria-expanded={allMarketsOpen}
+                aria-haspopup="true"
+                aria-label={allMarketsLabels[locale]}
+              >
+                <LayoutGrid size={15} />
+                <span className={styles.allMarketsToggleText}>{allMarketsLabels[locale]}</span>
+                <ChevronDown size={14} className={`${styles.allMarketsChevron} ${allMarketsOpen ? styles.allMarketsChevronOpen : ""}`} />
+              </button>
+
+              {allMarketsOpen && (
+                <div className={styles.allMarketsPopover} role="menu" aria-label={allMarketsLabels[locale]}>
+                  {marketCategories.map((category) => (
+                    <div key={category.id} className={styles.allMarketsCategory}>
+                      <span className={styles.allMarketsCategoryTitle}>
+                        {marketCategoryTitles[locale][category.id]}
+                      </span>
+                      <div className={styles.allMarketsGrid}>
+                        {category.items.map((value) => {
+                          const isActive = marketLens === value;
+                          return (
+                            <Link
+                              key={value}
+                              prefetch={false}
+                              scroll={false}
+                              href={getMarketOptionHref(locale, scope, value, feed.dateIso)}
+                              onClick={() => setAllMarketsOpen(false)}
+                              className={`${styles.allMarketsItem} ${isActive ? styles.allMarketsItemActive : ""}`}
+                              aria-current={isActive ? "page" : undefined}
+                            >
+                              {value === "best" && <Sparkles size={13} />}
+                              {value === "top" && <Star size={13} />}
+                              {value === "value" && <Sparkles size={13} />}
+                              {value === "CORNERS" && <Flag size={13} />}
+                              {value === "CARDS" && <span className={styles.cardsIconMini} aria-hidden="true" />}
+                              <span>{getMarketOptionLabel(locale, value, copy)}</span>
+                            </Link>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </section>
 
           <div className={styles.feedMeta}>
