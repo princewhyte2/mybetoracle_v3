@@ -17,12 +17,13 @@ const imports = {
     lagosDate: () => '2026-09-13', TodayFeedError: class extends Error {},
   },
   '@/i18n/config': { isLocale: locale => ['en', 'fr'].includes(locale), locales: ['en', 'fr'] },
-  '@/i18n/messages': {}, '@/i18n/localized-metadata': {}, '@/i18n/system-labels': {},
+  '@/features/today/today-jsonld': { buildTodayItemListJsonLd: () => null },
+  '@/i18n/messages': {}, '@/i18n/localized-metadata': {}, '@/i18n/system-labels': { systemLabels: { en: {}, fr: {} } },
   './page.module.css': {},
 };
 const loaded = { exports: {} };
 new Function('require', 'module', 'exports', code)(name => name in imports ? imports[name] : require(name), loaded, loaded.exports);
-const render = (date, locale = 'en') => loaded.exports.default({ params: Promise.resolve({ locale }), searchParams: Promise.resolve({ date }) });
+const render = async (date, locale = 'en') => (await loaded.exports.default({ params: Promise.resolve({ locale }), searchParams: Promise.resolve({ date }) })).props.children[1];
 
 test('date navigation replaces client feed identity while same-day renders retain it', async () => {
   const today = await render('2026-09-13');

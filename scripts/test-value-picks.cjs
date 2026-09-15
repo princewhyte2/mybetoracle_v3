@@ -29,8 +29,8 @@ test('live, finished, kicked-off and invalid-dated fixtures are excluded', () =>
     assert.equal(valueMarket({ ...fixture(), ...override }, false, now), null);
   }
 });
-test('all fourteen supported market labels exist in every product language', () => {
-  assert.equal(predictionMarkets.length, 14);
+test('all sixteen supported market labels exist in every product language', () => {
+  assert.equal(predictionMarkets.length, 16);
   for (const locale of ['en', 'fr', 'es', 'de', 'it', 'pt']) for (const market of predictionMarkets) {
     assert.ok(predictionMarketLabel(locale, market));
     assert.ok(!predictionMarketLabel(locale, market).includes('_'));

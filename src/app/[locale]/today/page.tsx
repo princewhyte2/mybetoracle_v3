@@ -2,8 +2,8 @@ import { notFound } from "next/navigation";
 import { TodayExperience } from "@/features/today/today-experience";
 import { todayRuntimeLabels } from "@/features/today/runtime-labels";
 import { getTodayData, lagosDate, TodayFeedError } from "@/features/today/today-service";
+import { buildTodayItemListJsonLd } from "@/features/today/today-jsonld";
 import { isLocale, locales } from "@/i18n/config";
-import { getMessages } from "@/i18n/messages";
 import { localizedMetadata } from "@/i18n/localized-metadata";
 import { systemLabels } from "@/i18n/system-labels";
 import styles from "./page.module.css";
@@ -21,7 +21,7 @@ function isCalendarDate(value: unknown): value is string {
   return !Number.isNaN(date.getTime()) && date.toISOString().slice(0, 10) === value;
 }
 
-export async function generateMetadata({params}:PageProps<"/[locale]/today">){const {locale}=await params;if(!isLocale(locale))notFound();return localizedMetadata(locale,"today",getMessages(locale).common.today,systemLabels[locale].todayDescription)}
+export async function generateMetadata({params}:PageProps<"/[locale]/today">){const {locale}=await params;if(!isLocale(locale))notFound();return localizedMetadata(locale,"today",systemLabels[locale].todayPredictionsHeading,systemLabels[locale].todayDescription)}
 
 export default async function TodayPage({ params, searchParams }: PageProps<"/[locale]/today">) {
   const { locale } = await params;
@@ -39,8 +39,13 @@ export default async function TodayPage({ params, searchParams }: PageProps<"/[l
   catch (error) { errorCode = error instanceof TodayFeedError ? error.code : "TODAY_SERVICE_UNAVAILABLE"; }
   if (errorCode || !data) return <TodayState title={runtime.unavailableTitle} message={runtime.unavailableHelp} code={errorCode ?? undefined} />;
   if (data.totalMatches === 0) return <TodayState title={runtime.noFixturesTitle} message={runtime.noFixturesHelp} />;
+  const origin = process.env.NEXT_PUBLIC_SITE_URL || "https://www.mybetoracle.com";
+  const jsonLd = buildTodayItemListJsonLd({ data, locale, origin });
   // A different product day owns a fresh feed, selection and live subscription.
-  return <TodayExperience key={`${locale}:${date}`} data={data} locale={locale} />;
+  return <>
+    {jsonLd && <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c") }} />}
+    <TodayExperience key={`${locale}:${date}`} data={data} locale={locale} heading={systemLabels[locale].todayPredictionsHeading} />
+  </>;
 }
 
 function TodayState({ title, message, code }: { title: string; message: string; code?: string }) {

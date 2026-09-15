@@ -3,7 +3,7 @@ import type { Locale } from "@/i18n/config";
 import { getMessages } from "@/i18n/messages";
 import { interpolateRuntimeLabel, todayRuntimeLabels } from "./runtime-labels";
 import { buildPublicMatchSlug } from "@/features/match/public-match-url";
-import { intelligenceCopy } from "./market-intelligence-copy";
+import { valueViewLabels } from "@/features/discovery/market-presentation";
 import { corePredictionMarkets, predictionMarkets, type Match, type MatchState, type OracleMarket, type PredictionMarket, type TodayData, type TipOutcome } from "./types";
 
 type ApiPrediction = { probability?: number | null; selections?: OracleMarket['selections']; evidence?: OracleMarket['evidence']; qualityTier?: string; predictionId: string | null; marketGroup: string; availability: string; marketType: string | null; marketValue: string | null; selection: string | null; shortSelection: string | null; confidence: number | null; odds: number | null; result?: unknown; valueAnalysis?: OracleMarket['valueAnalysis'] };
@@ -50,7 +50,7 @@ function mapResponse(api: TodayApiResponse, locale: Locale): TodayData {
       countryCode: competition.countryCode || "INT",
       countryFlagUrl: competition.countryFlagUrl,
       emblemUrl: competition.emblemUrl,
-      name: competition.id === "ranked-discovery" ? (api.ranking?.view === "top" ? intelligenceCopy(locale)[20] : intelligenceCopy(locale)[21]) : competition.name,
+      name: competition.id === "ranked-discovery" ? valueViewLabels[locale][api.ranking?.view === "top" ? "top" : "value"] : competition.name,
       matches: competition.fixtures.map((fixture) => mapFixture(fixture, locale, unavailable)),
     })),
     oraclePick: api.oraclePick ? mapFixture(api.oraclePick, locale, unavailable) : null,

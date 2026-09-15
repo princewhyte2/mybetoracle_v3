@@ -2,6 +2,9 @@
 
 import { MarketIntelligence, intelligenceCopy } from "./market-intelligence";
 import { predictionMarketLabel } from "@/i18n/prediction-markets";
+import { marketPresentation, valueViewLabels } from "@/features/discovery/market-presentation";
+import { discoveryLabels } from "@/features/discovery/labels";
+import Link from "next/link";
 
 import {
   Activity,
@@ -41,7 +44,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { MboMark } from "@/components/brand/brand-marks";
 import { MobileProductMenu } from "@/components/navigation/mobile-product-menu";
 import { locales, localeNames, type Locale } from "@/i18n/config";
-import { getMessages, localeTags } from "@/i18n/messages";
+import { getMessages, localeTags, type Messages } from "@/i18n/messages";
 import { withMultiPickTerminology } from "@/i18n/multi-pick-terminology";
 import { systemLabels } from "@/i18n/system-labels";
 import { AnalyticsEvents } from "@/lib/analytics/events";
@@ -108,10 +111,14 @@ const showMoreLabels: Record<Locale, string> = {
   pt: "Mostrar mais competições",
 };
 
-const valueViewLabels: Record<Locale, Record<string, string>> = {
-  en: { value: 'Value', top: 'Top Picks' }, es: { value: 'Valor', top: 'Selecciones destacadas' },
-  fr: { value: 'Valeur', top: 'Meilleures sélections' }, de: { value: 'Value-Chancen', top: 'Top-Auswahl' },
-  it: { value: 'Valore', top: 'Migliori selezioni' }, pt: { value: 'Valor', top: 'Melhores seleções' },
+
+const marketEmptyLabels: Record<Locale, [string, string]> = {
+  en: ["No published picks for this view yet", "Explore the other prediction markets for this date."],
+  es: ["Aún no hay pronósticos publicados en esta vista", "Explora los otros mercados de pronósticos para esta fecha."],
+  fr: ["Aucun pronostic publié dans cette vue pour le moment", "Découvrez les autres marchés de pronostics pour cette date."],
+  de: ["Noch keine veröffentlichten Tipps in dieser Ansicht", "Entdecke die anderen Prognosemärkte für dieses Datum."],
+  it: ["Nessun pronostico pubblicato in questa vista", "Esplora gli altri mercati di pronostici per questa data."],
+  pt: ["Ainda não há palpites publicados nesta vista", "Explore os outros mercados de palpites para esta data."],
 };
 
 const navItems = [
@@ -281,6 +288,22 @@ function MatchRow({
   );
 }
 
+// A compact, crawlable nav between the three core SEO surfaces -- Today,
+// Tomorrow, and a curated subset of the real scoped market pages for
+// whichever scope is currently active. Real <Link>s, not client buttons,
+// so both users and crawlers can move between these pages without relying
+// on the sitemap.
+
+function ScopeMarketNav({ locale, scope, common }: { locale: Locale; scope: "today" | "tomorrow"; common: Messages["common"] }) {
+  const discoveryCopy = discoveryLabels[locale];
+  return (
+    <nav className={styles.scopeMarketNav} aria-label={discoveryCopy.predictions}>
+      <Link href={`/${locale}/today`} prefetch={false} aria-current={scope === "today" ? "page" : undefined} className={`${styles.scopeMarketLink} ${scope === "today" ? styles.scopeMarketLinkActive : ""}`}>{common.today}</Link>
+      <Link href={`/${locale}/tomorrow`} prefetch={false} aria-current={scope === "tomorrow" ? "page" : undefined} className={`${styles.scopeMarketLink} ${scope === "tomorrow" ? styles.scopeMarketLinkActive : ""}`}>{common.tomorrow}</Link>
+    </nav>
+  );
+}
+
 function CompetitionBlock({
   competition,
   marketLens,
@@ -311,12 +334,16 @@ function CompetitionBlock({
   return (
     <section className={styles.competitionBlock}>
       <header className={styles.competitionHeader}>
-        <button className={styles.competitionIdentity} onClick={onToggle} aria-expanded={!collapsed}>
-          <span className={styles.countryCode}>{competition.countryFlagUrl ? <Image src={competition.countryFlagUrl} alt="" width={22} height={16} /> : competition.countryCode}</span>
-          {competition.emblemUrl && <Image className={styles.competitionEmblem} src={competition.emblemUrl} alt="" width={24} height={24} />}
-          <strong>{competition.name}</strong>
-          <ChevronDown className={collapsed ? styles.chevronCollapsed : ""} size={17} />
-        </button>
+        {/* h2 wraps the collapse/expand toggle so the competition group gets a
+            real semantic heading without losing the interactive control. */}
+        <h2 className={styles.competitionHeadingReset}>
+          <button className={styles.competitionIdentity} onClick={onToggle} aria-expanded={!collapsed}>
+            <span className={styles.countryCode}>{competition.countryFlagUrl ? <Image src={competition.countryFlagUrl} alt="" width={22} height={16} /> : competition.countryCode}</span>
+            {competition.emblemUrl && <Image className={styles.competitionEmblem} src={competition.emblemUrl} alt="" width={24} height={24} />}
+            <strong>{competition.name}</strong>
+            <ChevronDown className={collapsed ? styles.chevronCollapsed : ""} size={17} />
+          </button>
+        </h2>
         {SHOW_TODAY_STANDINGS && <button className={styles.textButton}>{copy.standings}</button>}
       </header>
       {!collapsed && (
@@ -342,7 +369,7 @@ function CompetitionBlock({
   );
 }
 
-export function TodayExperience({ data, locale, scope = "today" }: { data: TodayData; locale: Locale; scope?: "today" | "tomorrow" }) {
+export function TodayExperience({ data, locale, scope = "today", heading, initialMarket = "best" }: { data: TodayData; locale: Locale; scope?: "today" | "tomorrow"; heading?: string; initialMarket?: PredictionLens }) {
   const router = useRouter();
   const [feed, setFeed] = useState(data);
   const [allFeed, setAllFeed] = useState(data);
@@ -351,8 +378,8 @@ export function TodayExperience({ data, locale, scope = "today" }: { data: Today
   const statuses = { won: common.won, lost: common.lost, void: common.void };
   const allMatches = useMemo(() => feed.competitions.flatMap((competition) => competition.matches), [feed.competitions]);
   const [filter, setFilter] = useState<Filter>("all");
-  const [marketLens, setMarketLens] = useState<PredictionLens>("best");
-  const [marketFilter, setMarketFilter] = useState("");
+  const [marketLens, setMarketLens] = useState<PredictionLens>(initialMarket);
+  const marketFilter = initialMarket === "best" || initialMarket === "top" || initialMarket === "value" ? "" : initialMarket;
   const discovery = marketLens === "top" || marketLens === "value" ? marketLens : "all";
   const [clockNow,setClockNow]=useState(()=>Date.now());
   useEffect(()=>{const timer=setInterval(()=>setClockNow(Date.now()),10000);return()=>clearInterval(timer)},[]);
@@ -360,7 +387,7 @@ export function TodayExperience({ data, locale, scope = "today" }: { data: Today
   const [followed, setFollowed] = useState(new Set<string>());
   const [added, setAdded] = useState(new Set<string>());
   const [collapsed, setCollapsed] = useState(new Set<string>());
-  const [selectedMatch, setSelectedMatch] = useState<Match>(() => data.oraclePick ?? allMatches.find((match) => match.id === data.oraclePickId) ?? allMatches[0]!);
+  const [selectedMatch, setSelectedMatch] = useState<Match | null>(() => (initialMarket === "best" ? data.oraclePick : null) ?? allMatches[0] ?? null);
   useEffect(() => {
     const fixtureCount = data.competitions.reduce((total, competition) => total + competition.matches.length, 0);
     void AnalyticsEvents.todayViewed({ locale, date: data.dateIso.slice(0, 10), fixtureCount });
@@ -374,8 +401,15 @@ export function TodayExperience({ data, locale, scope = "today" }: { data: Today
   const [searchLoading, setSearchLoading] = useState(false);
   const [searchFailed, setSearchFailed] = useState(false);
   const [searchAttempt, setSearchAttempt] = useState(0);
+  const lastFeedRequest = useRef(JSON.stringify([data.dateIso, locale, "", 0, discovery, marketFilter, "all"]));
   const searchInputRef = useRef<HTMLInputElement>(null);
   const loadMoreTriggerRef = useRef<HTMLButtonElement>(null);
+  const marketNavRef = useRef<HTMLElement>(null);
+  useEffect(() => {
+    const nav = marketNavRef.current;
+    const selected = nav?.querySelector<HTMLElement>('[aria-current="page"]');
+    if (nav && selected) nav.scrollLeft += selected.getBoundingClientRect().left - nav.getBoundingClientRect().left - 12;
+  }, [marketLens]);
 
   useEffect(() => {
     const handleSearchShortcut = (event: KeyboardEvent) => {
@@ -390,6 +424,8 @@ export function TodayExperience({ data, locale, scope = "today" }: { data: Today
 
   useEffect(() => {
     const search = query.trim();
+    const identity = JSON.stringify([data.dateIso, locale, query, searchAttempt, discovery, marketFilter, filter]);
+    if (lastFeedRequest.current === identity) return;
     const controller = new AbortController(); let active = true;
     const timer = window.setTimeout(async () => {
       setSearchLoading(true); setSearchFailed(false);
@@ -400,7 +436,7 @@ export function TodayExperience({ data, locale, scope = "today" }: { data: Today
         const response=await fetch(`/api/today?${params}`,{cache:'no-store',signal:controller.signal});
         if(!response.ok)throw new Error('TODAY_DISCOVERY_UNAVAILABLE');
         const next=await response.json() as TodayData;
-        if(active){setFeed(next);setVisibleCompetitionCount(20);const first=next.competitions[0]?.matches[0];if(first)setSelectedMatch(first)}
+        if(active){lastFeedRequest.current=identity;setFeed(next);setVisibleCompetitionCount(20);setSelectedMatch(next.competitions[0]?.matches[0]??null)}
       }catch(error){if(active&&!(error instanceof DOMException&&error.name==='AbortError'))setSearchFailed(true)}
       finally{if(active)setSearchLoading(false)}
     },search.length>=2?250:0);
@@ -430,7 +466,7 @@ export function TodayExperience({ data, locale, scope = "today" }: { data: Today
         return { ...match, livePrediction:payload.livePredictions??match.livePrediction, markets, statusCode: payload.statusCode ?? match.statusCode, state: payload.statusCode ? stateForLiveCode(payload.statusCode) : match.state, kickoff: payload.statusCode ? `${payload.statusCode}${payload.elapsedMinute !== null && payload.elapsedMinute !== undefined ? ` ${payload.elapsedMinute}'` : ""}` : match.kickoff, elapsedMinute: payload.elapsedMinute ?? match.elapsedMinute, score: payload.homeScore !== undefined || payload.awayScore !== undefined ? [payload.homeScore ?? null, payload.awayScore ?? null] : match.score };
       };
       setFeed((current) => ({ ...current, competitions: current.competitions.map((competition) => ({ ...competition, matches: competition.matches.map(apply) })) }));
-      setSelectedMatch((current) => apply(current));
+      setSelectedMatch((current) => current ? apply(current) : null);
     } catch {} };
     source.addEventListener("fixture_update", update as EventListener); return () => source.close();
   }, [feed.dateIso]);
@@ -510,7 +546,7 @@ export function TodayExperience({ data, locale, scope = "today" }: { data: Today
 
   function switchLocale(nextLocale: string) {
     if (locales.includes(nextLocale as Locale)) {
-      router.push(`/${nextLocale}/today?date=${feed.dateIso.slice(0, 10)}`);
+      router.push(`/${nextLocale}/${scope}${initialMarket === "best" ? "" : `/${initialMarket === "top" || initialMarket === "value" ? `${initialMarket}-picks` : marketPresentation[initialMarket].slug}`}?date=${feed.dateIso.slice(0,10)}`);
     }
   }
 
@@ -549,8 +585,8 @@ export function TodayExperience({ data, locale, scope = "today" }: { data: Today
 
   const dateFormatter = new Intl.DateTimeFormat(localeTags[locale], { weekday: "long", month: "long", day: "numeric" });
   const shortDateFormatter = new Intl.DateTimeFormat(localeTags[locale], { weekday: "short" });
-  const selectedMarket = getMarket(selectedMatch, marketLens);
-  const selectedPickKey = getPickKey(selectedMatch, marketLens);
+  const selectedMarket = selectedMatch ? getMarket(selectedMatch, marketLens) : null;
+  const selectedPickKey = selectedMatch ? getPickKey(selectedMatch, marketLens) : "";
   const selectedPicks = Array.from(added).flatMap((key) => {
     const [matchId, marketKey] = key.split("::") as [string, PredictionMarket];
     const match = allMatches.find((item) => item.id === matchId);
@@ -646,8 +682,8 @@ export function TodayExperience({ data, locale, scope = "today" }: { data: Today
         <main className={styles.main}>
           <div className={styles.pageHeader}>
             <div>
-              <h1>{scope === "tomorrow" ? copy.tomorrowMatches : copy.todayMatches}</h1>
-              <p>{feed.analyzedMatches === null ? feed.totalMatches : `${feed.analyzedMatches} ${copy.analyzed} · ${feed.totalMatches}`} {common.fixtures}</p>
+              <h1>{heading ?? (scope === "tomorrow" ? copy.tomorrowMatches : copy.todayMatches)}</h1>
+              <p>{marketLens !== "best" || filter === "live" || query.trim() ? feed.pagination.total : feed.analyzedMatches === null ? feed.totalMatches : `${feed.analyzedMatches} ${copy.analyzed} · ${feed.totalMatches}`} {common.fixtures}</p>
             </div>
             <div className={styles.headerActions}>
               <button className={styles.calendarButton} onClick={() => navigate("multi-picks")} title={copy.openAccas}><WandSparkles size={18} /> {common.accas}</button>
@@ -655,6 +691,8 @@ export function TodayExperience({ data, locale, scope = "today" }: { data: Today
               <button className={styles.calendarButton} onClick={() => navigate("calendar")} title={copy.openCalendar}><CalendarDays size={18} /> {copy.calendar}</button>
             </div>
           </div>
+
+          <ScopeMarketNav locale={locale} scope={scope} common={common} />
 
           <label className={styles.mobileSearch}>
             <Search size={18} />
@@ -712,25 +750,17 @@ export function TodayExperience({ data, locale, scope = "today" }: { data: Today
           </section>
 
           <section className={styles.marketLens} aria-label={copy.predictionMarket}>
-            <div className={styles.marketSegments} role="tablist" aria-label={copy.marketFamilies}>
+            <nav ref={marketNavRef} className={styles.marketSegments} aria-label={copy.marketFamilies}>
               {marketOptions.map(option => (
-                <button
-                  key={option.value}
-                  type="button"
+                <Link key={option.value} prefetch={false} scroll={false}
+                  href={`/${locale}/${scope}${option.value === "best" ? "" : `/${option.value === "top" || option.value === "value" ? `${option.value}-picks` : marketPresentation[option.value].slug}`}?date=${feed.dateIso.slice(0,10)}`}
                   className={marketLens === option.value ? styles.marketSegmentActive : ""}
-                  role="tab"
-                  aria-selected={marketLens === option.value}
-                  onClick={() => {
-                    if (option.value === "top" || option.value === "value") setFilter("all");
-                    else setMarketFilter(option.value === "best" ? "" : option.value);
-                    setMarketLens(option.value);
-                  }}
-                >
+                  aria-current={marketLens === option.value ? "page" : undefined}>
                   {option.value === "best" && <Sparkles size={14} />}
-                  <span>{"label" in option ? copy[option.label] : valueViewLabels[locale][option.value] ?? predictionMarketLabel(locale, option.value)}</span>
-                </button>
+                  <span>{option.value === "best" ? copy.oracleBest : option.value === "top" || option.value === "value" ? valueViewLabels[locale][option.value] : predictionMarketLabel(locale, option.value)}</span>
+                </Link>
               ))}
-            </div>
+            </nav>
           </section>
 
           <div className={styles.feedMeta}>
@@ -764,7 +794,7 @@ export function TodayExperience({ data, locale, scope = "today" }: { data: Today
                 marketLens={marketLens}
                 followed={followed}
                 added={added}
-                selectedId={selectedMatch.id}
+                selectedId={selectedMatch?.id ?? ""}
                 collapsed={query.trim() ? false : collapsed.has(competition.id)}
                 copy={copy}
                 statuses={statuses}
@@ -781,9 +811,9 @@ export function TodayExperience({ data, locale, scope = "today" }: { data: Today
             {!loadingView && !searchLoading && !viewFailed && !searchFailed && filteredCompetitions.length === 0 && (Boolean(query.trim()) || !feed.pagination.hasMore) && (
               <div className={styles.emptyState}>
                 <Search size={24} />
-                <strong>{copy.noMatches}</strong>
-                <p>{copy.noMatchesHelp}</p>
-                <button onClick={() => { setQuery(""); setFilter("all"); setVisibleCompetitionCount(20); }}>{copy.clearFilters}</button>
+                <strong>{query.trim() || filter !== "all" ? copy.noMatches : marketEmptyLabels[locale][0]}</strong>
+                <p>{query.trim() || filter !== "all" ? copy.noMatchesHelp : marketEmptyLabels[locale][1]}</p>
+                {query.trim() || filter !== "all" ? <button onClick={() => { setQuery(""); setFilter("all"); setVisibleCompetitionCount(20); }}>{copy.clearFilters}</button> : <Link href={`/${locale}/${scope}`}>{copy.all}</Link>}
               </div>
             )}
             {!loadingView && !searchLoading && !viewFailed && !searchFailed && visibleCompetitionCount < filteredCompetitions.length && (
@@ -805,7 +835,7 @@ export function TodayExperience({ data, locale, scope = "today" }: { data: Today
           </div>
         </main>
 
-        <aside className={styles.intelligenceRail}>
+        {selectedMatch && selectedMarket && <aside className={styles.intelligenceRail}>
           <MarketIntelligence key={`${selectedMatch.id}:${resolveMarketKey(selectedMatch,marketLens)}`} match={selectedMatch} group={resolveMarketKey(selectedMatch,marketLens)} locale={locale} />
           <section className={styles.oraclePanel}>
             <div className={styles.oraclePanelHeader}>
@@ -889,7 +919,7 @@ export function TodayExperience({ data, locale, scope = "today" }: { data: Today
             </div>
             <button className={styles.performanceLink} onClick={() => router.push(`/${locale}/results`)}>{copy.viewHistory} <ChevronRight size={16} /></button>
           </section>
-        </aside>
+        </aside>}
       </div>
 
       {selectedPicks.length > 0 && (

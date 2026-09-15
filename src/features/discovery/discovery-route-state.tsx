@@ -1,6 +1,10 @@
 "use client";
 
 import { AlertTriangle, RefreshCw } from "lucide-react";
+import { useParams } from "next/navigation";
+import { isLocale, type Locale } from "@/i18n/config";
+import { discoveryLabels } from "./labels";
+import { systemLabels } from "@/i18n/system-labels";
 import styles from "./discovery-route-state.module.css";
 
 export function DiscoveryLoading() {
@@ -8,5 +12,7 @@ export function DiscoveryLoading() {
 }
 
 export function DiscoveryError({ reset }: { reset: () => void }) {
-  return <main className={styles.error}><section><AlertTriangle/><span>MYBETORACLE</span><h1>Football catalogue unavailable</h1><p>The verified catalogue could not be retrieved safely. No placeholder football data has been substituted.</p><button onClick={reset}><RefreshCw/>Try again</button></section></main>;
+  const params = useParams();
+  const locale: Locale = isLocale(params.locale as string) ? params.locale as Locale : "en";
+  return <main className={styles.error}><section><AlertTriangle/><span>MYBETORACLE</span><h1>{discoveryLabels[locale].exploreTitle}</h1><button onClick={reset}><RefreshCw/>{systemLabels[locale].retry}</button></section></main>;
 }

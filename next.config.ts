@@ -88,7 +88,7 @@ const nextConfig: NextConfig = {
       ...PREDICTION_INTENT_REDIRECTS.flatMap(({ segments }) =>
         LEGACY_LOCALES.map((locale) => ({
           source: `/${locale}/${segments[locale]}`,
-          destination: `/${locale}/today`,
+          destination: `/${locale}/${({ "predictions/tomorrow": "tomorrow", "predictions/over-2-5-today": "today/total-2-5", "predictions/btts-today": "today/both-teams-score" } as Record<string, string>)[segments.en] ?? "today"}`,
           permanent: true,
         })),
       ),

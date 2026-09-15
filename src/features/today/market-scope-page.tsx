@@ -1,89 +1,89 @@
 import "server-only";
 import type { Metadata } from "next";
+import { cache } from "react";
+import Link from "next/link";
+import type { PredictionMarket } from "./types";
 import { notFound } from "next/navigation";
 import { TodayExperience } from "@/features/today/today-experience";
 import { todayRuntimeLabels } from "@/features/today/runtime-labels";
 import { getTodayData, lagosDate, tomorrowLagosDate, TodayFeedError } from "@/features/today/today-service";
 import { marketGroupForSlug, marketPresentation } from "@/features/discovery/discovery-service";
+import { rankedViewForSlug, valueViewLabels } from "@/features/discovery/market-presentation";
 import { discoveryLabels } from "@/features/discovery/labels";
-import { isLocale, locales, type Locale } from "@/i18n/config";
+import { isLocale, locales } from "@/i18n/config";
 import { localizedMetadata } from "@/i18n/localized-metadata";
+import { type MarketScope, marketSlugs, scopedHeading } from "./scoped-heading";
 import styles from "@/app/[locale]/today/page.module.css";
 
-export type MarketScope = "today" | "tomorrow";
-
-const scopeWord: Record<Locale, Record<MarketScope, string>> = {
-  en: { today: "today", tomorrow: "tomorrow" },
-  es: { today: "hoy", tomorrow: "mañana" },
-  fr: { today: "aujourd’hui", tomorrow: "demain" },
-  de: { today: "heute", tomorrow: "morgen" },
-  it: { today: "oggi", tomorrow: "domani" },
-  pt: { today: "hoje", tomorrow: "amanhã" },
-};
-
-// A single colon-separated template reads naturally across all six locales
-// regardless of market-name length or grammatical gender, without following
-// English word order (per V3_LOCALIZATION_STANDARD.md's translation rule).
-function scopedMarketTitle(locale: Locale, marketName: string, scope: MarketScope): string {
-  const when = scopeWord[locale][scope];
-  switch (locale) {
-    case "es": return `${marketName}: pronósticos para ${when}`;
-    case "fr": return `${marketName} : pronostics pour ${when}`;
-    case "de": return `${marketName}: Prognosen für ${when}`;
-    case "it": return `${marketName}: pronostici per ${when}`;
-    case "pt": return `${marketName}: palpites para ${when}`;
-    default: return `${marketName}: predictions for ${when}`;
-  }
-}
-
-export function marketSlugs(): string[] {
-  return Object.values(marketPresentation)
-    .map((item) => item.slug)
-    .filter((slug) => slug !== "mixed");
-}
+export type { MarketScope };
+export { marketSlugs, scopedHeading };
 
 export function buildMarketScopeStaticParams() {
-  return locales.flatMap((locale) => marketSlugs().map((marketSlug) => ({ locale, marketSlug })));
+  return locales.flatMap((locale) => [...marketSlugs(), "value-picks", "top-picks"].map((marketSlug) => ({ locale, marketSlug })));
 }
 
 type PageParams = { locale: string; marketSlug: string };
+type ScopeProps = { params: Promise<PageParams>; searchParams?: Promise<Record<string, string | string[] | undefined>> };
+const marketFeed = cache((date: string, locale: typeof locales[number], group: string, page: number) => getTodayData({ date, locale, ...(group === "top" || group === "value" ? { view: group } : { marketGroup: group }), page }));
+function pageNumber(value: unknown) { return typeof value === "string" && /^[1-9]\d{0,5}$/.test(value) ? Number(value) : 1; }
+function scopeDate(value: unknown, scope: MarketScope) {
+  if (typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    const parsed = new Date(`${value}T12:00:00Z`);
+    if (Number.isFinite(parsed.getTime()) && parsed.toISOString().slice(0,10) === value) return value;
+  }
+  return scope === "today" ? lagosDate() : tomorrowLagosDate();
+}
 
 export async function buildMarketScopeMetadata(
-  { params }: { params: Promise<PageParams> },
+  { params, searchParams }: ScopeProps,
   scope: MarketScope,
 ): Promise<Metadata> {
   const { locale, marketSlug } = await params;
   if (!isLocale(locale)) notFound();
-  const group = marketGroupForSlug(marketSlug);
+  const ranked = rankedViewForSlug(marketSlug);
+  const group = ranked ?? marketGroupForSlug(marketSlug);
   if (!group) return { robots: { index: false, follow: false } };
   const copy = discoveryLabels[locale];
-  const marketName = copy.marketNames[marketSlug] ?? marketPresentation[group]?.name ?? marketSlug;
+  const marketName = ranked ? valueViewLabels[locale][ranked] : copy.marketNames[marketSlug] ?? marketPresentation[group]?.name ?? marketSlug;
   const description = copy.marketDescriptions[marketSlug];
+  const query = await searchParams;
+  const page = pageNumber(query?.page);
+  const date = scopeDate(query?.date, scope);
+  const data = await marketFeed(date, locale, group, page).catch(() => null);
   return localizedMetadata(
     locale,
-    `${scope}/${marketSlug}`,
-    scopedMarketTitle(locale, marketName, scope),
+    `${scope}/${marketSlug}${page > 1 ? `?page=${page}` : ""}`,
+    scopedHeading(locale, marketName, scope),
     description,
+    Boolean(data?.competitions.length) && page === 1 && date === scopeDate(undefined, scope),
   );
 }
 
-export async function MarketScopePage({ params }: { params: Promise<PageParams> }, scope: MarketScope) {
+export async function MarketScopePage({ params, searchParams }: ScopeProps, scope: MarketScope) {
   const { locale, marketSlug } = await params;
   if (!isLocale(locale)) notFound();
-  const group = marketGroupForSlug(marketSlug);
+  const ranked = rankedViewForSlug(marketSlug);
+  const group = ranked ?? marketGroupForSlug(marketSlug);
   if (!group) notFound();
 
   const runtime = todayRuntimeLabels[locale];
-  const date = scope === "today" ? lagosDate() : tomorrowLagosDate();
+  const query = await searchParams;
+  const date = scopeDate(query?.date, scope);
+  const page = pageNumber(query?.page);
   let data;
   let errorCode: string | null = null;
-  try { data = await getTodayData({ date, locale, marketGroup: group }); }
+  try { data = await marketFeed(date, locale, group, page); }
   catch (error) { errorCode = error instanceof TodayFeedError ? error.code : "TODAY_SERVICE_UNAVAILABLE"; }
-  if (errorCode || !data) return <ScopeState title={runtime.unavailableTitle} message={runtime.unavailableHelp} code={errorCode ?? undefined} />;
-  if (data.totalMatches === 0) return <ScopeState title={runtime.noFixturesTitle} message={runtime.noFixturesHelp} />;
-  return <TodayExperience key={`${locale}:${scope}:${marketSlug}:${date}`} data={data} locale={locale} scope={scope} />;
+  if (errorCode || !data) return <ScopeState title={runtime.unavailableTitle} message={runtime.unavailableHelp} />;
+  if (page > 1 && data.competitions.length === 0) notFound();
+  const marketName = ranked ? valueViewLabels[locale][ranked] : discoveryLabels[locale].marketNames[marketSlug] ?? marketPresentation[group]?.name ?? marketSlug;
+  return <><TodayExperience key={`${locale}:${scope}:${marketSlug}:${date}:${page}`} data={data} locale={locale} scope={scope} initialMarket={ranked ?? (group === "ORACLE_PICK" ? "best" : group as Exclude<PredictionMarket, "ORACLE_PICK">)} heading={marketName} />
+    <nav aria-label={discoveryLabels[locale].fixtures} style={{ display: "flex", gap: "1rem", justifyContent: "center", padding: "1rem 1rem 5rem" }}>
+      {page > 1 && <Link prefetch={false} href={`/${locale}/${scope}/${marketSlug}?date=${date}&page=${page - 1}`}>← {page - 1}</Link>}
+      {data.pagination.hasMore && <Link prefetch={false} href={`/${locale}/${scope}/${marketSlug}?date=${date}&page=${page + 1}`}>{page + 1} →</Link>}
+    </nav></>;
 }
 
-function ScopeState({ title, message, code }: { title: string; message: string; code?: string }) {
-  return <main className={styles.state}><div><span>MyBetOracle</span><h1>{title}</h1><p>{message}</p>{code && <small>Reference: {code}</small>}</div></main>;
+function ScopeState({ title, message }: { title: string; message: string }) {
+  return <main className={styles.state}><div><span>MyBetOracle</span><h1>{title}</h1><p>{message}</p></div></main>;
 }

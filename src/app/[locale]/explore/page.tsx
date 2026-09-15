@@ -7,4 +7,4 @@ import { isLocale, locales } from "@/i18n/config";
 export const dynamic = "force-dynamic";
 export function generateStaticParams(){return locales.map(locale=>({locale}))}
 export async function generateMetadata({params}:PageProps<"/[locale]/explore">){const {locale}=await params;if(!isLocale(locale))notFound();const c=discoveryLabels[locale];return discoveryMetadata(locale,"explore",c.exploreTitle,c.exploreDescription)}
-export default async function Page({params}:PageProps<"/[locale]/explore">){const {locale}=await params;if(!isLocale(locale))notFound();const data=await getDiscoveryData({locale});return <DiscoveryExperience locale={locale} data={data} view="explore"/>}
+export default async function Page({params}:PageProps<"/[locale]/explore">){const {locale}=await params;if(!isLocale(locale))notFound();const data=await getDiscoveryData({locale,activityOptional:true});return <DiscoveryExperience locale={locale} data={data} view="explore"/>}

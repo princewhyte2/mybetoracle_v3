@@ -3,6 +3,8 @@ import { cache } from "react";
 import { notFound, permanentRedirect } from "next/navigation";
 import { MatchExperience } from "@/features/match/match-experience";
 import { getMatchDetail, MatchDetailError } from "@/features/match/match-service";
+import { schemaEventStatus } from "@/features/match/schema-event-status";
+import { entitySlug } from "@/features/discovery/public-id";
 import { isLocale, locales, type Locale } from "@/i18n/config";
 import { interpolateSystem, systemLabels } from "@/i18n/system-labels";
 
@@ -35,21 +37,17 @@ export default async function MatchPage({ params }: PageProps<"/[locale]/match/[
   const origin = process.env.NEXT_PUBLIC_SITE_URL || "https://www.mybetoracle.com";
   const jsonLd = {
     "@context": "https://schema.org", "@type": "SportsEvent", name: `${match.home.name} vs ${match.away.name}`,
-    startDate: match.kickoffAt, eventStatus: eventStatus(match.statusCode), url: `${origin}${match.canonicalPath}`,
+    startDate: match.kickoffAt, eventStatus: schemaEventStatus(match.statusCode), url: `${origin}${match.canonicalPath}`,
     homeTeam: { "@type": "SportsTeam", name: match.home.name }, awayTeam: { "@type": "SportsTeam", name: match.away.name },
     ...(match.venue ? { location: { "@type": "Place", name: match.venue, address: match.city || undefined } } : {}),
   };
+  const competitionUrl = match.competition.id
+    ? `${origin}/${locale}/competitions/${entitySlug(match.competition.name, match.competition.id)}`
+    : undefined;
   const breadcrumb = { "@context": "https://schema.org", "@type": "BreadcrumbList", itemListElement: [
     { "@type": "ListItem", position: 1, name: "Today", item: `${origin}/${locale}/today` },
-    { "@type": "ListItem", position: 2, name: match.competition.name },
+    { "@type": "ListItem", position: 2, name: match.competition.name, ...(competitionUrl ? { item: competitionUrl } : {}) },
     { "@type": "ListItem", position: 3, name: `${match.home.name} vs ${match.away.name}`, item: `${origin}${match.canonicalPath}` },
   ] };
   return <><script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify([jsonLd, breadcrumb]).replace(/</g, "\\u003c") }} /><MatchExperience match={match} locale={locale} /></>;
-}
-
-function eventStatus(code: string) {
-  if (["FT", "AET", "PEN"].includes(code)) return "https://schema.org/EventCompleted";
-  if (["PST", "CANC", "ABD"].includes(code)) return code === "PST" ? "https://schema.org/EventPostponed" : "https://schema.org/EventCancelled";
-  if (["NS", "TBD"].includes(code)) return "https://schema.org/EventScheduled";
-  return "https://schema.org/EventInProgress";
 }

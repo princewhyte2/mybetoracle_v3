@@ -8,6 +8,7 @@ export type MarketEntity = { slug: string; code: string; name: string; shortName
 export type DiscoveryFixture = { id: string; slug: null; kickoffAt: string; competitionSlug: string; homeSlug: string; awaySlug: string; marketSlug: string; pick: string; odds: number | null; oracleScore: number; state: "scheduled"|"live"|"finished"; score?: [number|null,number|null] };
 
 export type DiscoveryData = {
+  activityAvailable?: boolean;
   date: string;
   countries: CountryEntity[];
   competitions: CompetitionEntity[];

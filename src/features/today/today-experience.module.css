@@ -406,6 +406,36 @@
   color: var(--heritage-blue);
 }
 
+.scopeMarketNav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 12px;
+}
+
+.scopeMarketLink {
+  padding: 5px 11px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--white);
+  color: var(--muted-strong);
+  font-size: 12px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: background 120ms ease, color 120ms ease, border-color 120ms ease;
+}
+
+.scopeMarketLink:hover {
+  border-color: var(--action-blue);
+  color: var(--heritage-blue);
+}
+
+.scopeMarketLinkActive {
+  border-color: var(--action-blue);
+  background: #f2f7ff;
+  color: var(--heritage-blue);
+}
+
 .dateRail {
   display: grid;
   grid-template-columns: 38px repeat(3, minmax(92px, 1fr)) 38px;
@@ -543,7 +573,7 @@
   display: none;
 }
 
-.marketSegments button {
+.marketSegments :is(button, a) {
   position: relative;
   flex: 0 0 auto;
   display: flex;
@@ -559,16 +589,16 @@
   color: var(--muted-strong);
 }
 
-.marketSegments button:last-child {
+.marketSegments :is(button, a):last-child {
   border-right: 0;
 }
 
-.marketSegments button:hover {
+.marketSegments :is(button, a):hover {
   background: var(--canvas);
   color: var(--heritage-blue);
 }
 
-.marketSegments button:focus-visible {
+.marketSegments :is(button, a):focus-visible {
   outline: 2px solid var(--action-blue);
   outline-offset: -3px;
 }
@@ -712,6 +742,13 @@
   padding: 0 10px;
   border-bottom: 1px solid var(--border-strong);
   background: #fbfcfe;
+}
+
+/* Real <h2> for crawlers/assistive tech, but transparent to the flex
+   layout it sits in -- no visual size/margin change from the browser's
+   default heading styles. */
+.competitionHeadingReset {
+  display: contents;
 }
 
 .competitionIdentity {
@@ -1801,7 +1838,7 @@
     scroll-snap-type: x proximity;
   }
 
-  .marketSegments button {
+  .marketSegments :is(button, a) {
     min-width: 96px;
     min-height: 44px;
     padding: 8px 10px;

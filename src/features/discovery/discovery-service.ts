@@ -1,9 +1,12 @@
 import "server-only";
 import { cache } from "react";
+import { unstable_cache } from "next/cache";
 import type { Locale } from "@/i18n/config";
 import { getTodayData, lagosDate } from "@/features/today/today-service";
 import type { Match, PredictionMarket, TodayData } from "@/features/today/types";
 import { entitySlug, readableSlug } from "./public-id";
+export { marketPresentation, marketGroupForSlug } from "./market-presentation";
+import { marketPresentation } from "./market-presentation";
 import type {
   CompetitionEntity,
   CountryEntity,
@@ -30,34 +33,6 @@ export class DiscoveryDataError extends Error {
   constructor(readonly code: string) { super(code); }
 }
 
-export const marketPresentation: Record<string, { slug: string; name: string; shortName: string }> = {
-  MIXED: { slug: "mixed", name: "Mixed Markets", shortName: "Mixed" },
-  REGULAR: { slug: "match-result", name: "Match Result", shortName: "1X2" },
-  DOUBLE_CHANCE: { slug: "double-chance", name: "Double Chance", shortName: "DC" },
-  BTTS: { slug: "both-teams-score", name: "Both Teams to Score", shortName: "BTTS" },
-  TOTAL_1_5: { slug: "total-1-5", name: "Over / Under 1.5", shortName: "O/U 1.5" },
-  TOTAL_2_5: { slug: "total-2-5", name: "Over / Under 2.5", shortName: "O/U 2.5" },
-  TOTAL_3_5: { slug: "total-3-5", name: "Over / Under 3.5", shortName: "O/U 3.5" },
-  GOALS_BAND: { slug: "goals-band", name: "Goals Band", shortName: "Goals" },
-  HALFTIME_RESULT: { slug: "halftime-result", name: "Half-time Result", shortName: "HT" },
-  HANDICAP: { slug: "handicap", name: "Handicap", shortName: "HCP" },
-  CORRECT_SCORE: { slug: "correct-score", name: "Correct Score", shortName: "Score" },
-  CORNERS: { slug: "corners", name: "Corners", shortName: "Corners" },
-  CARDS: { slug: "cards", name: "Cards", shortName: "Cards" },
-  TEAM_TO_SCORE: { slug: "team-to-score", name: "Team to Score", shortName: "TTS" },
-};
-
-const marketGroupBySlug = new Map(
-  Object.entries(marketPresentation).map(([group, presentation]) => [presentation.slug, group]),
-);
-// MIXED and ORACLE_PICK are internal aggregate views, not real bookmaker
-// market types -- excluded from the scope x market fanout pages, which
-// exist to mirror Forebet/PredictZ's per-market-type crawlable pages.
-export function marketGroupForSlug(slug: string): string | null {
-  if (slug === "mixed" || slug === "oracle-best") return null;
-  return marketGroupBySlug.get(slug) ?? null;
-}
-
 function isObject(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === "object" && !Array.isArray(value);
 }
@@ -75,7 +50,7 @@ function parseCatalog<T>(value: unknown, entity: string): CatalogResponse<T> {
   return value as CatalogResponse<T>;
 }
 
-async function catalogPage<T>(entity: string, locale: Locale, page: number, search?: string, id?: string) {
+async function readCatalogPage<T>(entity: string, locale: Locale, page: number, search?: string, id?: string) {
   const baseUrl = process.env.MYBETORACLE_SERVER_BASE_URL?.replace(/\/$/, "");
   const serviceKey = process.env.MYBETORACLE_SERVER_SERVICE_KEY;
   if (!baseUrl || !serviceKey || serviceKey.length < 32) {
@@ -92,6 +67,7 @@ async function catalogPage<T>(entity: string, locale: Locale, page: number, sear
   try {
     response = await fetch(url, {
       cache: "no-store",
+      signal: AbortSignal.timeout(10_000),
       headers: { Accept: "application/json", "X-MyBetOracle-V3-Key": serviceKey },
     });
   } catch {
@@ -103,6 +79,16 @@ async function catalogPage<T>(entity: string, locale: Locale, page: number, sear
       : "DISCOVERY_SERVICE_UNAVAILABLE");
   }
   return parseCatalog<T>(await response.json(), entity);
+}
+
+// Successful, validated public catalogue pages only; no user-specific state.
+const cachedCatalogPage = unstable_cache(
+  async (entity: string, locale: Locale, page: number, id: string | undefined, _upstream: string) => readCatalogPage<unknown>(entity, locale, page, undefined, id),
+  ["discovery-public-catalog-v2"], { revalidate: 300 },
+);
+async function catalogPage<T>(entity: string, locale: Locale, page: number, search?: string, id?: string): Promise<CatalogResponse<T>> {
+  return (search ? readCatalogPage<T>(entity, locale, page, search, id)
+    : cachedCatalogPage(entity, locale, page, id, process.env.MYBETORACLE_SERVER_BASE_URL ?? "")) as Promise<CatalogResponse<T>>;
 }
 
 async function allCatalog<T>(entity: string, locale: Locale, maximumPages: number) {
@@ -139,7 +125,7 @@ function selection(match: Match) {
     | undefined;
 }
 
-function indexToday(today: TodayData) {
+function indexToday(today: Pick<TodayData, "competitions">) {
   const competitions = new Map(today.competitions.map((item) => [item.id, item]));
   const teamActivity = new Map<string, {
     competitionId: string;
@@ -164,7 +150,7 @@ function indexToday(today: TodayData) {
 }
 
 function mapFixtures(
-  today: TodayData,
+  today: Pick<TodayData, "competitions">,
   competitionSlugs: Map<string, string>,
   teamSlugs: Map<string, string>,
 ): DiscoveryFixture[] {
@@ -194,17 +180,22 @@ function mapFixtures(
 export async function getDiscoveryData({
   locale,
   date = lagosDate(),
+  activityOptional = false,
 }: {
   locale: Locale;
   date?: string;
+  activityOptional?: boolean;
 }): Promise<DiscoveryData> {
-  const [countryCatalog, competitionCatalog, teamCatalog, marketCatalog, today] = await Promise.all([
+  const [countryCatalog, competitionCatalog, teamCatalog, marketCatalog, activity] = await Promise.all([
     allCatalog<CatalogCountry>("countries", locale, 1),
     allCatalog<CatalogCompetition>("competitions", locale, 1),
     allCatalog<CatalogTeam>("teams", locale, 1),
     allCatalog<CatalogMarket>("markets", locale, 1),
-    getTodayData({ date, locale }),
+    getTodayData({ date, locale }).catch(error => { if (!activityOptional) throw error; return null; }),
   ]);
+  // Never mistake a failed preview for an empty catalogue; views receive the
+  // explicit availability flag and suppress activity counts when unavailable.
+  const today = activity ?? { competitions: [] };
   const countryRows = countryCatalog.items;
   const competitionRows = competitionCatalog.items;
   const teamRows = teamCatalog.items;
@@ -310,13 +301,6 @@ export async function getDiscoveryData({
     };
   });
   const fixtures = mapFixtures(today, competitionSlugs, teamSlugs);
-  const publishedByMarket = new Map<string, number>();
-  for (const fixture of fixtures) {
-    publishedByMarket.set(
-      fixture.marketSlug,
-      (publishedByMarket.get(fixture.marketSlug) ?? 0) + 1,
-    );
-  }
   const markets: MarketEntity[] = marketRows.map((item) => {
     const presentation = marketPresentation[item.code] ?? {
       slug: readableSlug(item.code),
@@ -327,7 +311,7 @@ export async function getDiscoveryData({
       ...presentation,
       code: item.code,
       description: "",
-      publishedToday: publishedByMarket.get(presentation.slug) ?? 0,
+      publishedToday: item.activePredictionCount,
       hitRate: item.hitRate === null ? null : item.hitRate * 100,
       settledSample: item.settledSample,
     };
@@ -338,7 +322,7 @@ export async function getDiscoveryData({
     teams: catalogMeta(teamCatalog.pagination, teams.length),
     markets: catalogMeta(marketCatalog.pagination, markets.length),
   };
-  return { date, countries, competitions, teams, markets, fixtures, catalog };
+  return { date, countries, competitions, teams, markets, fixtures, catalog, activityAvailable: activity !== null };
 }
 
 function catalogMeta(pagination: Pagination, loaded: number) {

@@ -8,7 +8,7 @@ import { getCompetitionData } from './competition-service';
 import { CompetitionContent } from './competition-content';
 import { competitionLabels } from './competition-labels';
 import { discoveryMetadata } from './metadata';
-import { discoveryLabels, interpolateDiscovery } from './labels';
+import { interpolateDiscovery } from './labels';
 import { encodedEntityId } from './public-id';
 import type { CompetitionTab } from './competition-types';
 import type { CompetitionEntity, DiscoveryData } from './types';
@@ -25,8 +25,8 @@ export async function generateMetadata({ params }: PageProps<'/[locale]/competit
   if (!isLocale(locale)) notFound();
   const entity = await identity(locale, competitionSlug);
   if (!entity) return { robots: { index: false, follow: false } };
-  const copy = discoveryLabels[locale];
-  return { ...discoveryMetadata(locale, `competitions/${entity.slug}`, `${entity.name} · ${copy.standings} · ${competitionLabels[locale].results}`, interpolateDiscovery(copy.genericEntityDescription, entity.name)),
+  const seo = competitionLabels[locale];
+  return { ...discoveryMetadata(locale, `competitions/${entity.slug}`, interpolateDiscovery(seo.seoTitle, entity.name), interpolateDiscovery(seo.seoDescription, entity.name)),
     alternates: { canonical: `/${locale}/competitions/${entity.slug}`, languages: await discoveryEntityAlternates('competition', entity.slug) } };
 }
 export default async function CompetitionPage({ params, searchParams }: PageProps<'/[locale]/competitions/[competitionSlug]'>) {

@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   Activity,
@@ -300,10 +301,11 @@ function Directory({
   return (
     <div className={styles.directoryGrid}>
       {data.markets.map((item) => (
-        <button
+        <Link
           className={styles.marketCard}
           key={item.slug}
-          onClick={() => router.push(`/${locale}/markets/${item.slug}`)}
+          prefetch={false}
+          href={`/${locale}/today/${item.slug}`}
         >
           <header>
             <span>{item.shortName}</span>
@@ -312,11 +314,11 @@ function Directory({
           <h2>{copy.marketNames[item.slug] ?? item.name}</h2>
           <p>{copy.marketDescriptions[item.slug] ?? item.description}</p>
           <footer>
-            <span>{item.publishedToday} {copy.today}</span>
+            <span>{item.publishedToday} {copy.picks}</span>
             <span>{item.settledSample} {copy.settled}</span>
             <ChevronRight />
           </footer>
-        </button>
+        </Link>
       ))}
     </div>
   );
@@ -370,7 +372,7 @@ function ExploreHome({ locale, data }: { locale: Locale; data: DiscoveryData }) 
           <ChevronRight />
         </button>
       </section>
-      <section className={styles.section}>
+      {data.activityAvailable !== false && <section className={styles.section}>
         <header>
           <div>
             <span>{copy.matchIntelligence}</span>
@@ -383,7 +385,7 @@ function ExploreHome({ locale, data }: { locale: Locale; data: DiscoveryData }) 
         {liveFixtures.map((item) => (
           <FixtureRow key={item.id} fixture={item} data={data} locale={locale} copy={copy} />
         ))}
-      </section>
+      </section>}
       <div className={styles.twoColumn}>
         <section className={styles.section}>
           <header>
@@ -408,9 +410,9 @@ function ExploreHome({ locale, data }: { locale: Locale; data: DiscoveryData }) 
                 </span>
                 <span>
                   <strong>{item.name}</strong>
-                  <small>{item.fixtures} {copy.matchesToday}</small>
+                  {data.activityAvailable !== false && <small>{item.fixtures} {copy.matchesToday}</small>}
                 </span>
-                <b>{item.oraclePicks}</b>
+                {data.activityAvailable !== false && <b>{item.oraclePicks}</b>}
                 <ChevronRight />
               </button>
             ))}

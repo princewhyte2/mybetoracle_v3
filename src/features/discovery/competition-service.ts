@@ -21,5 +21,5 @@ export const getCompetitionData = cache(async (locale: Locale, id: string, tab: 
   if (data.schemaVersion !== 'mbo-competition-v1' || data.competition?.id !== id || data.locale !== locale || data.tab !== tab ||
     (seasonId && data.season?.id !== seasonId) || !Array.isArray(data.fixtures) || !Array.isArray(data.seasons) || !data.pagination)
     throw new Error('COMPETITION_INVALID_RESPONSE');
-  return data;
+  return { ...data, predictedFixtures: Array.isArray(data.predictedFixtures) ? data.predictedFixtures : [], statistics: data.statistics ?? null };
 });
