@@ -291,6 +291,7 @@
 }
 
 .pinnedLeague {
+  text-decoration: none;
   display: grid;
   grid-template-columns: 31px 1fr auto;
   align-items: center;

@@ -1,6 +1,6 @@
 "use client";
 
-import { MarketIntelligence, intelligenceCopy } from "./market-intelligence";
+import { competitionShortcuts } from "./competition-shortcuts";
 import { predictionMarketLabel } from "@/i18n/prediction-markets";
 import { marketPresentation, valueViewLabels } from "@/features/discovery/market-presentation";
 import { discoveryLabels } from "@/features/discovery/labels";
@@ -130,15 +130,6 @@ const navItems = [
   { label: "betslip", icon: ReceiptText, active: false, route: "betslip" },
 ] as const;
 
-// Prototype surface retained until MyBetOracle Saved/preferences is integrated.
-// These values are visual placeholders and must not be sourced from DoubleEngine.
-const pinnedCompetitions = [
-  ["ENG", "Premier League", "12"],
-  ["EUR", "Champions League", "8"],
-  ["ESP", "LaLiga", "6"],
-  ["ITA", "Serie A", "5"],
-] as const;
-
 function Crest({ team }: { team: Team }) {
   if (team.emblemUrl) return <span className={styles.crest} aria-hidden="true"><Image src={team.emblemUrl} alt="" fill sizes="28px" /></span>;
   return (
@@ -255,7 +246,7 @@ function MatchRow({
       </button>
 
       <button className={styles.scorePreview} onClick={onSelect} title={interpolate(copy.oracleScore, { score: market.confidence })}>
-        {match.rankedSelection && market.probability != null ? <strong>{Math.round(market.probability * 100)}%</strong> : <OracleGauge score={market.confidence} compact />}
+        <OracleGauge score={market.confidence} compact />
       </button>
 
       <div className={styles.rowActions}>
@@ -280,7 +271,7 @@ function MatchRow({
       </div>
       <button className={styles.mobilePrediction} onClick={onSelect} aria-label={market.selection}>
         <strong title={market.selection}>{market.shortSelection}</strong>
-        {market.available && <span className={styles.mobileConfidence} title={interpolate(copy.oracleScore, { score: market.confidence })} aria-label={interpolate(copy.oracleScore, { score: market.confidence })}><Sparkles size={12} />{match.rankedSelection && market.probability != null ? `${Math.round(market.probability * 100)}%` : `${market.confidence}/100`}</span>}
+        {market.available && <span className={styles.mobileConfidence} title={interpolate(copy.oracleScore, { score: market.confidence })} aria-label={interpolate(copy.oracleScore, { score: market.confidence })}><Sparkles size={12} />{market.confidence}/100</span>}
         {market.odds !== null && <span className={styles.mobileOdds}>{market.odds}</span>}
         {market.outcome && <OutcomeBadge outcome={market.outcome} labels={statuses} compact />}
       </button>
@@ -369,7 +360,7 @@ function CompetitionBlock({
   );
 }
 
-export function TodayExperience({ data, locale, scope = "today", heading, initialMarket = "best" }: { data: TodayData; locale: Locale; scope?: "today" | "tomorrow"; heading?: string; initialMarket?: PredictionLens }) {
+export function TodayExperience({ data, locale, scope = "today", heading, initialMarket = "best", pinnedCompetitions = [] }: { data: TodayData; locale: Locale; scope?: "today" | "tomorrow"; heading?: string; initialMarket?: PredictionLens; pinnedCompetitions?: ReadonlyArray<Pick<Competition, "id" | "name" | "countryCode">> }) {
   const router = useRouter();
   const [feed, setFeed] = useState(data);
   const [allFeed, setAllFeed] = useState(data);
@@ -664,12 +655,11 @@ export function TodayExperience({ data, locale, scope = "today", heading, initia
               <span>{copy.following}</span>
               <button title={copy.manageFollowing} aria-label={copy.manageFollowing}><Plus size={16} /></button>
             </div>
-            {pinnedCompetitions.map(([code, name, count]) => (
-              <button className={styles.pinnedLeague} key={name} onClick={() => router.push(`/${locale}/competitions/${name === "Premier League" ? "premier-league" : name === "LaLiga" ? "laliga" : name === "Serie A" ? "serie-a" : "premier-league"}`)}>
-                <span>{code}</span>
+            {competitionShortcuts(pinnedCompetitions, locale).map(({ id, name, countryCode, href }) => (
+              <Link className={styles.pinnedLeague} key={id} href={href} prefetch={false}>
+                <span>{countryCode}</span>
                 <strong>{name}</strong>
-                <small>{count}</small>
-              </button>
+              </Link>
             ))}
           </div>}
 
@@ -836,7 +826,6 @@ export function TodayExperience({ data, locale, scope = "today", heading, initia
         </main>
 
         {selectedMatch && selectedMarket && <aside className={styles.intelligenceRail}>
-          <MarketIntelligence key={`${selectedMatch.id}:${resolveMarketKey(selectedMatch,marketLens)}`} match={selectedMatch} group={resolveMarketKey(selectedMatch,marketLens)} locale={locale} />
           <section className={styles.oraclePanel}>
             <div className={styles.oraclePanelHeader}>
               <span><Sparkles size={15} /> {copy.oraclePick}</span>
@@ -851,7 +840,7 @@ export function TodayExperience({ data, locale, scope = "today", heading, initia
             </div>
             <div className={styles.oracleDecision}>
               <div className={styles.oracleScoreMetric} title={interpolate(copy.oracleScore, { score: selectedMarket.confidence })}>
-                {selectedMatch.rankedSelection && selectedMarket.probability != null ? <strong>{Math.round(selectedMarket.probability * 100)}%</strong> : <OracleGauge score={selectedMarket.confidence} />}
+                <OracleGauge score={selectedMarket.confidence} />
               </div>
               <div>
                 <h2>{selectedMarket.selection}</h2>
@@ -864,7 +853,6 @@ export function TodayExperience({ data, locale, scope = "today", heading, initia
                 <span>{copy.settledFullTime}</span>
               </div>
             )}
-            {selectedMarket.valueAnalysis && <dl className={styles.valueEvidence}><div><dt>{intelligenceCopy(locale)[3]}</dt><dd>{new Intl.NumberFormat(locale,{style:"percent",maximumFractionDigits:1}).format(selectedMarket.valueAnalysis.probability)}</dd></div><div><dt>{intelligenceCopy(locale)[19]}</dt><dd>+{new Intl.NumberFormat(locale,{style:"percent",maximumFractionDigits:1}).format(selectedMarket.valueAnalysis.edge)}</dd></div><div><dt>{intelligenceCopy(locale)[4]}</dt><dd>{new Intl.DateTimeFormat(locale,{hour:"2-digit",minute:"2-digit"}).format(new Date(selectedMarket.valueAnalysis.capturedAt))}</dd></div></dl>}
             {selectedMatch.insight && <p className={styles.insight}>{translateInsight(locale, selectedMatch.insight)}</p>}
             <div className={styles.panelActions}>
               <button className={styles.primaryButton} disabled={!selectedMatch.slug} onClick={() => selectedMatch.slug && router.push(`/${locale}/match/${selectedMatch.slug}`)}>{copy.fullIntelligence} <ChevronRight size={16} /></button>
