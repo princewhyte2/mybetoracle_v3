@@ -84,23 +84,6 @@ const SHOW_TODAY_STANDINGS = false;
 const SHOW_TODAY_SORT = false;
 const SHOW_TODAY_COMPETITION_FOLLOWING = false;
 
-const footerJumpLabels: Record<Locale, string> = {
-  en: "Page information & links",
-  es: "Información de la página y enlaces",
-  fr: "Informations de la page et liens",
-  de: "Seiteninformationen und Links",
-  it: "Informazioni sulla pagina e link",
-  pt: "Informações da página e links",
-};
-
-const resumeScrollLabels: Record<Locale, string> = {
-  en: "Resume auto-loading",
-  es: "Reanudar carga automática",
-  fr: "Reprendre le chargement automatique",
-  de: "Automatisches Nachladen fortsetzen",
-  it: "Riprendi caricamento automatico",
-  pt: "Retomar carregamento automático",
-};
 
 const marketOptions = [
   { value: "best", label: "oracleBest", title: "oracleBestHelp" },
@@ -415,12 +398,37 @@ function ScopeMarketNav({
           <span>{valueViewLabels[locale].value}</span>
         </Link>
         <Link
+          href={getMarketOptionHref(locale, scope, "MIXED", dateIso)}
+          prefetch={false}
+          className={`${styles.scopeMarketQuickPill} ${marketLens === "MIXED" ? styles.scopeMarketQuickPillActive : ""}`}
+          aria-current={marketLens === "MIXED" ? "page" : undefined}
+        >
+          <WandSparkles size={12} />
+          <span>{predictionMarketLabel(locale, "MIXED")}</span>
+        </Link>
+        <Link
           href={getMarketOptionHref(locale, scope, "DOUBLE_CHANCE", dateIso)}
           prefetch={false}
           className={`${styles.scopeMarketQuickPill} ${marketLens === "DOUBLE_CHANCE" ? styles.scopeMarketQuickPillActive : ""}`}
           aria-current={marketLens === "DOUBLE_CHANCE" ? "page" : undefined}
         >
           <span>{predictionMarketLabel(locale, "DOUBLE_CHANCE")}</span>
+        </Link>
+        <Link
+          href={getMarketOptionHref(locale, scope, "BTTS", dateIso)}
+          prefetch={false}
+          className={`${styles.scopeMarketQuickPill} ${marketLens === "BTTS" ? styles.scopeMarketQuickPillActive : ""}`}
+          aria-current={marketLens === "BTTS" ? "page" : undefined}
+        >
+          <span>{predictionMarketLabel(locale, "BTTS")}</span>
+        </Link>
+        <Link
+          href={getMarketOptionHref(locale, scope, "TOTAL_2_5", dateIso)}
+          prefetch={false}
+          className={`${styles.scopeMarketQuickPill} ${marketLens === "TOTAL_2_5" ? styles.scopeMarketQuickPillActive : ""}`}
+          aria-current={marketLens === "TOTAL_2_5" ? "page" : undefined}
+        >
+          <span>{predictionMarketLabel(locale, "TOTAL_2_5")}</span>
         </Link>
         <Link
           href={getMarketOptionHref(locale, scope, "CORNERS", dateIso)}
@@ -439,14 +447,6 @@ function ScopeMarketNav({
         >
           <span className={styles.cardsIconMini} aria-hidden="true" />
           <span>{predictionMarketLabel(locale, "CARDS")}</span>
-        </Link>
-        <Link
-          href={getMarketOptionHref(locale, scope, "TOTAL_2_5", dateIso)}
-          prefetch={false}
-          className={`${styles.scopeMarketQuickPill} ${marketLens === "TOTAL_2_5" ? styles.scopeMarketQuickPillActive : ""}`}
-          aria-current={marketLens === "TOTAL_2_5" ? "page" : undefined}
-        >
-          <span>{predictionMarketLabel(locale, "TOTAL_2_5")}</span>
         </Link>
       </div>
     </nav>
@@ -542,10 +542,10 @@ export function TodayExperience({ data, locale, scope = "today", heading, initia
     void AnalyticsEvents.todayViewed({ locale, date: data.dateIso.slice(0, 10), fixtureCount });
   }, [data, locale]);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
   const [visibleCompetitionCount, setVisibleCompetitionCount] = useState(20);
   const [loadingMore, setLoadingMore] = useState(false);
   const [loadMoreFailed, setLoadMoreFailed] = useState(false);
-  const [autoScrollPaused, setAutoScrollPaused] = useState(false);
   const loadingView = false;
   const [viewFailed, setViewFailed] = useState(false);
   const [searchLoading, setSearchLoading] = useState(false);
@@ -553,7 +553,7 @@ export function TodayExperience({ data, locale, scope = "today", heading, initia
   const [searchAttempt, setSearchAttempt] = useState(0);
   const lastFeedRequest = useRef(JSON.stringify([data.dateIso, locale, "", 0, discovery, marketFilter, "all"]));
   const searchInputRef = useRef<HTMLInputElement>(null);
-  const loadMoreTriggerRef = useRef<HTMLButtonElement>(null);
+  const infiniteSentinelRef = useRef<HTMLDivElement>(null);
   const marketNavRef = useRef<HTMLElement>(null);
   const allMarketsRef = useRef<HTMLDivElement>(null);
   const [allMarketsOpen, setAllMarketsOpen] = useState(false);
@@ -696,18 +696,27 @@ export function TodayExperience({ data, locale, scope = "today", heading, initia
 
   const visibleCompetitions = filteredCompetitions.slice(0, visibleCompetitionCount);
 
+  const loadingMoreRef = useRef(false);
+
   useEffect(() => {
-    const trigger = loadMoreTriggerRef.current;
-    if (!trigger || autoScrollPaused || typeof IntersectionObserver === "undefined") return;
+    const sentinel = infiniteSentinelRef.current;
+    if (!sentinel || typeof IntersectionObserver === "undefined") return;
     const observer = new IntersectionObserver(([entry]) => {
-      if (entry.isIntersecting && !loadingMore) trigger.click();
-    }, { rootMargin: "500px 0px" });
-    observer.observe(trigger);
+      if (entry.isIntersecting) {
+        if (visibleCompetitionCount < filteredCompetitions.length) {
+          setVisibleCompetitionCount((current) => Math.min(filteredCompetitions.length, current + 20));
+        } else if (feed.pagination.hasMore && !loadingMoreRef.current) {
+          void loadMoreFixtures();
+        }
+      }
+    }, { rootMargin: "1200px 0px" });
+    observer.observe(sentinel);
     return () => observer.disconnect();
-  }, [autoScrollPaused, feed.pagination.hasMore, filteredCompetitions.length, loadingMore, visibleCompetitionCount]);
+  }, [feed.pagination.hasMore, feed.pagination.nextCursor, filteredCompetitions.length, visibleCompetitionCount]);
 
   async function loadMoreFixtures() {
-    if (loadingMore || !feed.pagination.hasMore || !feed.pagination.nextCursor) return;
+    if (loadingMoreRef.current || !feed.pagination.hasMore || !feed.pagination.nextCursor) return;
+    loadingMoreRef.current = true;
     setLoadingMore(true);
     setLoadMoreFailed(false);
     try {
@@ -725,6 +734,7 @@ export function TodayExperience({ data, locale, scope = "today", heading, initia
     } catch {
       setLoadMoreFailed(true);
     } finally {
+      loadingMoreRef.current = false;
       setLoadingMore(false);
     }
   }
@@ -835,6 +845,17 @@ export function TodayExperience({ data, locale, scope = "today", heading, initia
           </label>
 
           <div className={styles.topbarActions}>
+            <button
+              type="button"
+              className={styles.mobileSearchToggle}
+              title={copy.searchPlaceholder}
+              aria-label={copy.searchPlaceholder}
+              onClick={() => {
+                setMobileSearchOpen((prev) => !prev);
+              }}
+            >
+              <Search size={19} />
+            </button>
             <button className={styles.topIconButton} title={common.notifications} aria-label={common.notifications} onClick={() => navigate("saved")}><Bell size={19} /></button>
             <label className={styles.localeSelect} title={common.language}>
               <Languages size={18} />
@@ -848,6 +869,41 @@ export function TodayExperience({ data, locale, scope = "today", heading, initia
             </button>
           </div>
         </div>
+        {mobileSearchOpen && (
+          <div className={styles.mobileSearchExpanded}>
+            <Search size={18} className={styles.mobileSearchIcon} />
+            <input
+              type="search"
+              autoFocus
+              value={query}
+              onChange={(event) => updateSearch(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === "Escape") {
+                  event.preventDefault();
+                  if (query) clearSearch(false);
+                  else setMobileSearchOpen(false);
+                }
+              }}
+              placeholder={copy.searchPlaceholder}
+              aria-label={copy.searchPlaceholder}
+              autoComplete="off"
+              aria-busy={searchLoading}
+            />
+            {query && (
+              <button type="button" className={styles.searchClear} onClick={() => clearSearch(false)} aria-label={copy.clearFilters}>
+                <X size={17} />
+              </button>
+            )}
+            <button
+              type="button"
+              className={styles.mobileSearchClose}
+              onClick={() => setMobileSearchOpen(false)}
+              aria-label={common.close ?? "Close"}
+            >
+              <X size={18} />
+            </button>
+          </div>
+        )}
       </header>
 
       {mobileMenuOpen && <MobileProductMenu locale={locale} activeRoute="today" onNavigate={() => setMobileMenuOpen(false)} />}
@@ -887,7 +943,6 @@ export function TodayExperience({ data, locale, scope = "today", heading, initia
           <div className={styles.pageHeader}>
             <div>
               <h1>{heading ?? (scope === "tomorrow" ? copy.tomorrowMatches : copy.todayMatches)}</h1>
-              <p>{marketLens !== "best" || filter === "live" || query.trim() ? feed.pagination.total : feed.analyzedMatches === null ? feed.totalMatches : `${feed.analyzedMatches} ${copy.analyzed} · ${feed.totalMatches}`} {common.fixtures}</p>
             </div>
             <div className={styles.headerActions}>
               <button className={styles.calendarButton} onClick={() => navigate("multi-picks")} title={copy.openAccas}><WandSparkles size={18} /> {common.accas}</button>
@@ -897,30 +952,6 @@ export function TodayExperience({ data, locale, scope = "today", heading, initia
           </div>
 
           <ScopeMarketNav locale={locale} scope={scope} marketLens={marketLens} dateIso={feed.dateIso} common={common} />
-
-          <label className={styles.mobileSearch}>
-            <Search size={18} />
-            <input
-              type="search"
-              value={query}
-              onChange={(event) => updateSearch(event.target.value)}
-              onKeyDown={(event) => {
-                if (event.key === "Escape" && query) {
-                  event.preventDefault();
-                  clearSearch(false);
-                }
-              }}
-              placeholder={copy.searchPlaceholder}
-              aria-label={copy.searchPlaceholder}
-              autoComplete="off"
-              aria-busy={searchLoading}
-            />
-            {query && (
-              <button type="button" className={styles.searchClear} onClick={() => clearSearch(false)} aria-label={copy.clearFilters}>
-                <X size={17} />
-              </button>
-            )}
-          </label>
 
           <section className={styles.dateRail} aria-label={copy.matchDate}>
             <button className={styles.dateArrow} onClick={() => changeDate(-1)} aria-label={copy.previousDay}><ChevronLeft size={20} /></button>
@@ -1104,40 +1135,22 @@ export function TodayExperience({ data, locale, scope = "today", heading, initia
                 {query.trim() || filter !== "all" ? <button onClick={() => { setQuery(""); setFilter("all"); setVisibleCompetitionCount(20); }}>{copy.clearFilters}</button> : <Link href={`/${locale}/${scope}`}>{copy.all}</Link>}
               </div>
             )}
-            {!loadingView && !searchLoading && !viewFailed && !searchFailed && visibleCompetitionCount < filteredCompetitions.length && (
-              <button
-                ref={loadMoreTriggerRef}
-                className={styles.showMoreButton}
-                onClick={() => setVisibleCompetitionCount((current) => current + 20)}
-              >
-                {showMoreLabels[locale]}
-                <span>{visibleCompetitionCount} / {filteredCompetitions.length}</span>
-              </button>
+            <div ref={infiniteSentinelRef} className={styles.infiniteSentinel} />
+
+            {loadingMore && (
+              <div className={styles.infiniteLoadingIndicator} role="status">
+                <LoaderCircle size={20} className={styles.infiniteSpinner} />
+                <span>{copy.loading}…</span>
+              </div>
             )}
-            {!loadingView && !searchLoading && !viewFailed && !searchFailed && visibleCompetitionCount >= filteredCompetitions.length && feed.pagination.hasMore && (
-              <button ref={loadMoreTriggerRef} className={styles.showMoreButton} onClick={() => void loadMoreFixtures()} disabled={loadingMore}>
-                {loadingMore ? `${showMoreLabels[locale]}…` : loadMoreFailed ? systemLabels[locale].retry : showMoreLabels[locale]}
-                <span>{allMatches.length} / {feed.pagination.total}</span>
-              </button>
-            )}
-            <div className={styles.feedFooterNav}>
-              <a
-                href="#site-footer"
-                className={styles.skipToFooterLink}
-                onClick={() => setAutoScrollPaused(true)}
-              >
-                {footerJumpLabels[locale]} ↓
-              </a>
-              {autoScrollPaused && (
-                <button
-                  type="button"
-                  className={styles.resumeScrollButton}
-                  onClick={() => setAutoScrollPaused(false)}
-                >
-                  {resumeScrollLabels[locale]} ↑
+
+            {loadMoreFailed && (
+              <div className={styles.infiniteRetryContainer}>
+                <button type="button" onClick={() => void loadMoreFixtures()} className={styles.infiniteRetryButton}>
+                  {systemLabels[locale].retry}
                 </button>
-              )}
-            </div>
+              </div>
+            )}
             <PageEditorial
               locale={locale}
               scopeKey={

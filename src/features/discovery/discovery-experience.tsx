@@ -246,7 +246,7 @@ function Directory({
               <small>{item.country}</small>
               <strong>{item.name}</strong>
               <p>
-                {item.fixtures} {copy.fixtures} · {item.oraclePicks} {copy.picks}
+                {item.fixtures} {copy.fixtures}
               </p>
             </div>
             <ChevronRight />
@@ -290,7 +290,7 @@ function Directory({
               <small>{item.matchesToday} {copy.matchesToday}</small>
               <strong>{item.name}</strong>
               <p>
-                {item.competitions} {copy.competitions.toLowerCase()} · {item.teams} {copy.teams.toLowerCase()}
+                {item.competitions} {copy.competitions.toLowerCase()}
               </p>
             </div>
             <ChevronRight />
@@ -410,9 +410,8 @@ function ExploreHome({ locale, data }: { locale: Locale; data: DiscoveryData }) 
                 </span>
                 <span>
                   <strong>{item.name}</strong>
-                  {data.activityAvailable !== false && <small>{item.fixtures} {copy.matchesToday}</small>}
+                  <small>{item.country}</small>
                 </span>
-                {data.activityAvailable !== false && <b>{item.oraclePicks}</b>}
                 <ChevronRight />
               </button>
             ))}

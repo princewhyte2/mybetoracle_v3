@@ -120,8 +120,78 @@
   outline-offset: 1px;
 }
 
-.mobileSearch {
+.mobileSearchToggle {
   display: none;
+  width: 36px;
+  height: 36px;
+  place-items: center;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+
+.mobileSearchToggle:hover {
+  background: rgb(255 255 255 / 8%);
+}
+
+.mobileSearchExpanded {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 16px;
+  background: var(--midnight);
+  z-index: 55;
+}
+
+.mobileSearchIcon {
+  color: var(--oracle-ice);
+  flex-shrink: 0;
+}
+
+.mobileSearchExpanded input {
+  flex: 1;
+  min-width: 0;
+  height: 40px;
+  border: 1px solid rgb(169 211 255 / 24%);
+  border-radius: 6px;
+  padding: 0 12px;
+  background: rgb(255 255 255 / 10%);
+  color: var(--white);
+  font-size: 14px;
+  outline: none;
+}
+
+.mobileSearchExpanded input::placeholder {
+  color: var(--dark-muted);
+}
+
+.mobileSearchExpanded input:focus {
+  border-color: var(--sky-blue);
+  background: rgb(255 255 255 / 14%);
+}
+
+.mobileSearchClose {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--white);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.mobileSearchClose:hover {
+  background: rgb(255 255 255 / 12%);
 }
 
 .topbarActions {
@@ -557,6 +627,64 @@
 .scopeMarketQuickPill > svg {
   color: var(--action-blue);
   flex-shrink: 0;
+}
+
+.infiniteSentinel {
+  width: 100%;
+  height: 1px;
+  margin: 16px 0;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.infiniteLoadingIndicator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 24px 16px;
+  color: var(--muted-strong);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.infiniteSpinner {
+  animation: spinInfinite 800ms linear infinite;
+  color: var(--action-blue);
+}
+
+@keyframes spinInfinite {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.infiniteRetryContainer {
+  display: flex;
+  justify-content: center;
+  padding: 20px 16px;
+}
+
+.infiniteRetryButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 18px;
+  border: 1px solid var(--action-blue);
+  border-radius: 6px;
+  background: var(--white);
+  color: var(--action-blue);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 120ms ease, color 120ms ease;
+}
+
+.infiniteRetryButton:hover {
+  background: #f2f7ff;
 }
 
 .cardsIconMini {
@@ -1925,40 +2053,37 @@
     display: none;
   }
 
-  .mobileSearch {
-    display: flex;
-    align-items: center;
-    gap: 9px;
-    min-height: 44px;
-    margin-bottom: 14px;
-    padding: 0 10px 0 12px;
-    border: 1px solid var(--border-strong);
-    border-radius: 6px;
-    background: var(--white);
-    color: var(--muted-text);
+  .mobileSearchToggle {
+    display: grid;
   }
 
-  .mobileSearch:focus-within {
-    border-color: var(--action-blue);
-    box-shadow: 0 0 0 3px rgb(21 94 239 / 12%);
+  .scopeMarketNav {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    padding-bottom: 6px;
+    margin-right: -16px;
+    padding-right: 16px;
   }
 
-  .mobileSearch input {
-    width: 100%;
-    min-width: 0;
-    border: 0;
-    outline: 0;
-    background: transparent;
-    color: var(--graphite);
-    font-size: 14px;
+  .scopeMarketNav::-webkit-scrollbar {
+    display: none;
   }
 
-  .mobileSearch input::placeholder {
-    color: var(--muted-text);
+  .scopeMarketQuickPills {
+    flex-wrap: nowrap;
+    overflow-x: visible;
   }
 
-  .mobileSearch .searchClear:hover {
-    background: var(--canvas);
+  .scopeNavDateLinks {
+    flex-shrink: 0;
+  }
+
+  .scopeMarketLink,
+  .scopeMarketQuickPill {
+    flex-shrink: 0;
+    white-space: nowrap;
   }
 
   .mobileMenuButton {

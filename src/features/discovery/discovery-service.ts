@@ -63,22 +63,33 @@ async function readCatalogPage<T>(entity: string, locale: Locale, page: number, 
   url.searchParams.set("pageSize", "100");
   if (search) url.searchParams.set("search", search);
   if (id) url.searchParams.set("id", id);
-  let response: Response;
-  try {
-    response = await fetch(url, {
-      cache: "no-store",
-      signal: AbortSignal.timeout(10_000),
-      headers: { Accept: "application/json", "X-MyBetOracle-V3-Key": serviceKey },
-    });
-  } catch {
-    throw new DiscoveryDataError("DISCOVERY_SERVICE_UNAVAILABLE");
+  let lastError: unknown;
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      const response = await fetch(url, {
+        cache: "no-store",
+        signal: AbortSignal.timeout(10_000),
+        headers: { Accept: "application/json", "X-MyBetOracle-V3-Key": serviceKey },
+      });
+      if (!response.ok) {
+        throw new DiscoveryDataError(response.status === 401
+          ? "DISCOVERY_CONFIGURATION_ERROR"
+          : "DISCOVERY_SERVICE_UNAVAILABLE");
+      }
+      return parseCatalog<T>(await response.json(), entity);
+    } catch (error) {
+      lastError = error;
+      if (error instanceof DiscoveryDataError && error.code === "DISCOVERY_CONFIGURATION_ERROR") {
+        throw error;
+      }
+      if (attempt === 0) {
+        await new Promise((resolve) => setTimeout(resolve, 350));
+      }
+    }
   }
-  if (!response.ok) {
-    throw new DiscoveryDataError(response.status === 401
-      ? "DISCOVERY_CONFIGURATION_ERROR"
-      : "DISCOVERY_SERVICE_UNAVAILABLE");
-  }
-  return parseCatalog<T>(await response.json(), entity);
+  throw lastError instanceof DiscoveryDataError
+    ? lastError
+    : new DiscoveryDataError("DISCOVERY_SERVICE_UNAVAILABLE");
 }
 
 // Successful, validated public catalogue pages only; no user-specific state.
