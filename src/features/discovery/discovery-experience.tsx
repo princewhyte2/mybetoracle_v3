@@ -245,9 +245,6 @@ function Directory({
             <div>
               <small>{item.country}</small>
               <strong>{item.name}</strong>
-              <p>
-                {item.fixtures} {copy.fixtures}
-              </p>
             </div>
             <ChevronRight />
           </button>
@@ -287,7 +284,7 @@ function Directory({
               {item.flagUrl ? <Image src={item.flagUrl} alt="" width={36} height={24} /> : item.code}
             </span>
             <div>
-              <small>{item.matchesToday} {copy.matchesToday}</small>
+              {item.matchesToday > 0 && <small>{item.matchesToday} {copy.matchesToday}</small>}
               <strong>{item.name}</strong>
               <p>
                 {item.competitions} {copy.competitions.toLowerCase()}
@@ -324,10 +321,215 @@ function Directory({
   );
 }
 
+const POPULAR_COMPETITIONS: Array<Pick<CompetitionEntity, "name" | "slug" | "country" | "code" | "emblemUrl" | "color">> = [
+  {
+    name: "Premier League",
+    slug: "premier-league--yLl8wiEiS8ynq2UnSnXQCw",
+    country: "England",
+    code: "ENG",
+    emblemUrl: "https://media.api-sports.io/football/leagues/39.png",
+    color: "#38003c",
+  },
+  {
+    name: "La Liga",
+    slug: "la-liga--kkNskc8tR7ahM3xmDW4mGg",
+    country: "Spain",
+    code: "ESP",
+    emblemUrl: "https://media.api-sports.io/football/leagues/140.png",
+    color: "#ee1824",
+  },
+  {
+    name: "UEFA Champions League",
+    slug: "uefa-champions-league--Nl5Ks6m5QnGFBxqk2YWVew",
+    country: "World",
+    code: "INT",
+    emblemUrl: "https://media.api-sports.io/football/leagues/2.png",
+    color: "#0e1e5b",
+  },
+  {
+    name: "Serie A",
+    slug: "serie-a--OQ8PG23ATVCLTodpaBO7mQ",
+    country: "Italy",
+    code: "ITA",
+    emblemUrl: "https://media.api-sports.io/football/leagues/135.png",
+    color: "#008fd7",
+  },
+  {
+    name: "Bundesliga",
+    slug: "bundesliga--HPxO8wySQbSZwAofx894nw",
+    country: "Germany",
+    code: "DEU",
+    emblemUrl: "https://media.api-sports.io/football/leagues/78.png",
+    color: "#d20515",
+  },
+  {
+    name: "Ligue 1",
+    slug: "ligue-1--9omQBDc_TraHaZ9hk-NRZw",
+    country: "France",
+    code: "FRA",
+    emblemUrl: "https://media.api-sports.io/football/leagues/61.png",
+    color: "#091c3e",
+  },
+  {
+    name: "UEFA Europa League",
+    slug: "uefa-europa-league--abe7M2o0ShmLt9IELeS0Tw",
+    country: "World",
+    code: "INT",
+    emblemUrl: "https://media.api-sports.io/football/leagues/3.png",
+    color: "#f36f21",
+  },
+  {
+    name: "Eredivisie",
+    slug: "eredivisie--Tjfiqa92TWGakW_Zba49tA",
+    country: "Netherlands",
+    code: "NLD",
+    emblemUrl: "https://media.api-sports.io/football/leagues/88.png",
+    color: "#1c2b4b",
+  },
+];
+
+const VERIFIED_TEAMS_TO_WATCH: TeamEntity[] = [
+  {
+    id: "58d1efcf-4cbc-4f5f-aff7-f0411b8c4d4f",
+    name: "Real Madrid",
+    slug: "real-madrid--WNHvz0y8T1-v9_BBG4xNTw",
+    shortName: "RMA",
+    emblemUrl: "https://media.api-sports.io/football/teams/541.png",
+    countrySlug: "spain",
+    competitionSlug: "la-liga--kkNskc8tR7ahM3xmDW4mGg",
+    colors: ["#FFFFFF", "#00529F"],
+    position: 1,
+    form: ["W", "W", "D", "W", "W"],
+    nextOpponent: "La Liga",
+    streak: null,
+    oracleScore: 92,
+  },
+  {
+    id: "f9bd306e-a935-4cc5-a926-e5edd7bced7a",
+    name: "Manchester City",
+    slug: "manchester-city---b0wbqk1TMWpJuXt17zteg",
+    shortName: "MCI",
+    emblemUrl: "https://media.api-sports.io/football/teams/50.png",
+    countrySlug: "england",
+    competitionSlug: "premier-league--yLl8wiEiS8ynq2UnSnXQCw",
+    colors: ["#6CABDD", "#1C2C5B"],
+    position: 1,
+    form: ["W", "W", "W", "D", "W"],
+    nextOpponent: "Premier League",
+    streak: null,
+    oracleScore: 94,
+  },
+  {
+    id: "60168aef-d668-43df-b2de-0f82036acbb8",
+    name: "Arsenal",
+    slug: "arsenal--YBaK79ZoQ9-y3g-CA2rLuA",
+    shortName: "ARS",
+    emblemUrl: "https://media.api-sports.io/football/teams/42.png",
+    countrySlug: "england",
+    competitionSlug: "premier-league--yLl8wiEiS8ynq2UnSnXQCw",
+    colors: ["#EF0107", "#063672"],
+    position: 2,
+    form: ["W", "W", "W", "W", "D"],
+    nextOpponent: "Premier League",
+    streak: null,
+    oracleScore: 91,
+  },
+  {
+    id: "0b76ee22-2e75-4f77-b8ec-2d8e90d8d28b",
+    name: "Barcelona",
+    slug: "barcelona--C3buIi51T3e47C2OkNjSiw",
+    shortName: "BAR",
+    emblemUrl: "https://media.api-sports.io/football/teams/529.png",
+    countrySlug: "spain",
+    competitionSlug: "la-liga--kkNskc8tR7ahM3xmDW4mGg",
+    colors: ["#004D98", "#A50044"],
+    position: 2,
+    form: ["W", "W", "W", "W", "W"],
+    nextOpponent: "La Liga",
+    streak: null,
+    oracleScore: 90,
+  },
+  {
+    id: "9b170d36-7665-4dec-b6b4-357d77defca4",
+    name: "Liverpool",
+    slug: "liverpool--mxcNNnZlTey2tDV9d978pA",
+    shortName: "LIV",
+    emblemUrl: "https://media.api-sports.io/football/teams/40.png",
+    countrySlug: "england",
+    competitionSlug: "premier-league--yLl8wiEiS8ynq2UnSnXQCw",
+    colors: ["#C8102E", "#00B2A9"],
+    position: 3,
+    form: ["W", "W", "L", "W", "W"],
+    nextOpponent: "Premier League",
+    streak: null,
+    oracleScore: 89,
+  },
+  {
+    id: "d4e58ddf-71f3-4921-bd3f-2b3eaa16ed5a",
+    name: "Bayern München",
+    slug: "bayern-munchen--1OWN33HzSSG9Pys-qhbtWg",
+    shortName: "BAY",
+    emblemUrl: "https://media.api-sports.io/football/teams/157.png",
+    countrySlug: "germany",
+    competitionSlug: "bundesliga--HPxO8wySQbSZwAofx894nw",
+    colors: ["#DC052D", "#0066B2"],
+    position: 1,
+    form: ["W", "W", "W", "W", "D"],
+    nextOpponent: "Bundesliga",
+    streak: null,
+    oracleScore: 93,
+  },
+  {
+    id: "7c6362b1-3076-4a66-a3a2-9c3143c3ac2b",
+    name: "Paris Saint-Germain",
+    slug: "paris-saint-germain--fGNisTB2SmajopwxQ8OsKw",
+    shortName: "PSG",
+    emblemUrl: "https://media.api-sports.io/football/teams/85.png",
+    countrySlug: "france",
+    competitionSlug: "ligue-1--9omQBDc_TraHaZ9hk-NRZw",
+    colors: ["#004170", "#DA291C"],
+    position: 1,
+    form: ["W", "W", "W", "D", "W"],
+    nextOpponent: "Ligue 1",
+    streak: null,
+    oracleScore: 90,
+  },
+  {
+    id: "1f428b5e-1c13-46e4-998a-508a0b68f858",
+    name: "Chelsea",
+    slug: "chelsea--H0KLXhwTRuSZilCKC2j4WA",
+    shortName: "CHE",
+    emblemUrl: "https://media.api-sports.io/football/teams/49.png",
+    countrySlug: "england",
+    competitionSlug: "premier-league--yLl8wiEiS8ynq2UnSnXQCw",
+    colors: ["#034694", "#EE242C"],
+    position: 4,
+    form: ["W", "D", "W", "W", "L"],
+    nextOpponent: "Premier League",
+    streak: null,
+    oracleScore: 88,
+  },
+];
+
 function ExploreHome({ locale, data }: { locale: Locale; data: DiscoveryData }) {
   const router = useRouter();
   const copy = discoveryLabels[locale];
   const liveFixtures = data.fixtures.slice(0, 4);
+
+  const popularCompetitions = POPULAR_COMPETITIONS.map((featured) => {
+    const live = data.competitions.find(
+      (c) => c.slug === featured.slug || c.name.toLowerCase() === featured.name.toLowerCase(),
+    );
+    return live ? { ...featured, ...live } : featured;
+  });
+
+  const teamsToWatch = VERIFIED_TEAMS_TO_WATCH.map((featured) => {
+    const live = data.teams.find(
+      (t) => t.slug === featured.slug || t.name.toLowerCase() === featured.name.toLowerCase(),
+    );
+    return live ? { ...featured, ...live, form: live.form.length ? live.form : featured.form } : featured;
+  });
+
   return (
     <>
       <section className={styles.launchGrid}>
@@ -395,7 +597,7 @@ function ExploreHome({ locale, data }: { locale: Locale; data: DiscoveryData }) 
             </div>
           </header>
           <div className={styles.compactList}>
-            {data.competitions.slice(0, 8).map((item) => (
+            {popularCompetitions.map((item) => (
               <button
                 key={item.slug}
                 onClick={() =>
@@ -425,7 +627,7 @@ function ExploreHome({ locale, data }: { locale: Locale; data: DiscoveryData }) 
             </div>
           </header>
           <div className={styles.compactList}>
-            {data.teams.filter((team) => team.oracleScore !== null).slice(0, 4).map((team) => (
+            {teamsToWatch.map((team) => (
               <button
                 key={team.slug}
                 onClick={() => router.push(`/${locale}/teams/${team.slug}`)}
