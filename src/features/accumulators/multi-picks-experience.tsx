@@ -147,7 +147,19 @@ export function MultiPicksExperience({ daily, weekly, locale }: { daily: Accumul
         <aside className={shellStyles.sidebar}><nav className={shellStyles.primaryNav} aria-label={common.primaryNavigation}>{navItems.map(({ key, icon: Icon, route }) => <button key={key} className={key === "accas" ? shellStyles.navActive : ""} onClick={() => navigate(route)}><Icon size={19} /><span>{common[key]}</span></button>)}</nav><div className={shellStyles.sidebarSection}><div className={shellStyles.sidebarHeading}><span>{labels.sectionTitle}</span></div><button className={`${styles.toolLink} ${styles.toolLinkActive}`}>{labels.publishedAccas}<ChevronRight size={14} /></button><button className={styles.toolLink} onClick={() => navigate("multi-picks/builder")}>{labels.buildMyAcca}<ChevronRight size={14} /></button><button className={styles.toolLink} onClick={() => navigate("pick-analyzer")}>{labels.pickAnalyzer}<ChevronRight size={14} /></button></div><div className={shellStyles.sidebarFooter}><button onClick={() => navigate("competitions")}><Globe2 size={17} /> {common.allCompetitions}</button><button onClick={() => navigate("responsible-play")}><ShieldCheck size={17} /> {common.responsiblePlay}</button></div></aside>
 
         <main className={`${shellStyles.main} ${styles.main}`}>
-          <div className={styles.pageHeader}><div><span>{labels.eyebrow}</span><h1>{labels.title}</h1></div>{data.history.length > 0 && <div><button onClick={() => setHistoryOpen(true)}><History size={16} /> {labels.history}</button></div>}</div>
+          <header className={styles.pageHeader}>
+            <div className={styles.headerTitleGroup}>
+              <h1 className={styles.pageTitle}>{labels.title}</h1>
+              <p className={styles.pageSubtitle}>{labels.subtitle}</p>
+            </div>
+            {data.history.length > 0 && (
+              <div className={styles.headerActions}>
+                <button onClick={() => setHistoryOpen(true)}>
+                  <History size={16} /> {labels.history}
+                </button>
+              </div>
+            )}
+          </header>
 
           <section className={styles.periodBar}>
             <div className={styles.scopeSwitch}><button className={scope === "DAILY" ? styles.scopeActive : ""} onClick={() => changeScope("DAILY")}>{labels.daily}</button><button className={scope === "WEEKLY" ? styles.scopeActive : ""} onClick={() => changeScope("WEEKLY")}>{labels.weekly}</button></div>
