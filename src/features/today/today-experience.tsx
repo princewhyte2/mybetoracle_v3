@@ -696,7 +696,12 @@ export function TodayExperience({ data, locale, scope = "today", heading, initia
 
   const visibleCompetitions = filteredCompetitions.slice(0, visibleCompetitionCount);
 
+  const hasMoreToDisplay = visibleCompetitionCount < filteredCompetitions.length || Boolean(feed.pagination.hasMore);
   const loadingMoreRef = useRef(false);
+  const stateRef = useRef({ feed, filter, discovery, query, marketFilter, locale });
+  useEffect(() => {
+    stateRef.current = { feed, filter, discovery, query, marketFilter, locale };
+  }, [feed, filter, discovery, query, marketFilter, locale]);
 
   useEffect(() => {
     const sentinel = infiniteSentinelRef.current;
@@ -715,15 +720,22 @@ export function TodayExperience({ data, locale, scope = "today", heading, initia
   }, [feed.pagination.hasMore, feed.pagination.nextCursor, filteredCompetitions.length, visibleCompetitionCount]);
 
   async function loadMoreFixtures() {
-    if (loadingMoreRef.current || !feed.pagination.hasMore || !feed.pagination.nextCursor) return;
+    const { feed: currentFeed, filter: currentFilter, discovery: currentDiscovery, query: currentQuery, marketFilter: currentMarketFilter, locale: currentLocale } = stateRef.current;
+    if (loadingMoreRef.current || !currentFeed.pagination.hasMore || !currentFeed.pagination.nextCursor) return;
     loadingMoreRef.current = true;
     setLoadingMore(true);
     setLoadMoreFailed(false);
     try {
-      const view = filter === "live" ? "live" : discovery;
-      const search = query.trim().length >= 2 ? query.trim() : undefined;
-      const params = new URLSearchParams({ date: feed.dateIso.slice(0, 10), locale, view, page: String(feed.pagination.page + 1), cursor: feed.pagination.nextCursor });
-      if(marketFilter)params.set("marketGroup",marketFilter);
+      const view = currentFilter === "live" ? "live" : currentDiscovery;
+      const search = currentQuery.trim().length >= 2 ? currentQuery.trim() : undefined;
+      const params = new URLSearchParams({
+        date: currentFeed.dateIso.slice(0, 10),
+        locale: currentLocale,
+        view,
+        page: String(currentFeed.pagination.page + 1),
+        cursor: currentFeed.pagination.nextCursor,
+      });
+      if (currentMarketFilter) params.set("marketGroup", currentMarketFilter);
       if (search) params.set("search", search);
       const response = await fetch(`/api/today?${params}`, { cache: "no-store" });
       if (!response.ok) { setLoadMoreFailed(true); return; }
@@ -1135,7 +1147,7 @@ export function TodayExperience({ data, locale, scope = "today", heading, initia
                 {query.trim() || filter !== "all" ? <button onClick={() => { setQuery(""); setFilter("all"); setVisibleCompetitionCount(20); }}>{copy.clearFilters}</button> : <Link href={`/${locale}/${scope}`}>{copy.all}</Link>}
               </div>
             )}
-            <div ref={infiniteSentinelRef} className={styles.infiniteSentinel} />
+            {hasMoreToDisplay && <div ref={infiniteSentinelRef} className={styles.infiniteSentinel} />}
 
             {loadingMore && (
               <div className={styles.infiniteLoadingIndicator} role="status">
