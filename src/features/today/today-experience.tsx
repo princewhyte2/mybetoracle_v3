@@ -1140,7 +1140,7 @@ export function TodayExperience({ data, locale, scope = "today", heading, initia
             {loadingMore && (
               <div className={styles.infiniteLoadingIndicator} role="status">
                 <LoaderCircle size={20} className={styles.infiniteSpinner} />
-                <span>{copy.loading}…</span>
+                <span>{systemLabels[locale].loading}…</span>
               </div>
             )}
 
