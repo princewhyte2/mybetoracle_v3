@@ -62,7 +62,22 @@ const nextConfig: NextConfig = {
   images: {
     // Portraits use the provider media CDN, never the paid football API.
     // The match mapper additionally restricts this to numeric player filenames.
-    remotePatterns: [{ protocol: "https", hostname: "media.api-sports.io", pathname: "/flags/**" }, { protocol: "https", hostname: "media.api-sports.io", pathname: "/football/leagues/**" }, { protocol: "https", hostname: "media.api-sports.io", pathname: "/football/teams/**" }, { protocol: "https", hostname: "media.api-sports.io", port: "", pathname: "/football/players/*.png", search: "" }],
+    remotePatterns: [
+      { protocol: "https", hostname: "media.api-sports.io", pathname: "/flags/**" },
+      { protocol: "https", hostname: "media.api-sports.io", pathname: "/football/leagues/**" },
+      { protocol: "https", hostname: "media.api-sports.io", pathname: "/football/teams/**" },
+      { protocol: "https", hostname: "media.api-sports.io", port: "", pathname: "/football/players/*.png", search: "" },
+      { protocol: "https", hostname: "res.cloudinary.com", pathname: "/**" },
+      { protocol: "https", hostname: "flagcdn.com", pathname: "/**" },
+    ],
+  },
+  async rewrites() {
+    return [
+      {
+        source: "/apple-app-site-association",
+        destination: "/.well-known/apple-app-site-association",
+      },
+    ];
   },
   async redirects() {
     return [
@@ -102,16 +117,56 @@ const nextConfig: NextConfig = {
     ];
   },
   async headers() {
-    return [{
-      source: "/:path*",
-      headers: [
-        { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
-        { key: "X-Content-Type-Options", value: "nosniff" },
-        { key: "X-Frame-Options", value: "SAMEORIGIN" },
-        { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=()" },
-        { key: "X-Accel-Buffering", value: "no" },
-      ],
-    }];
+    return [
+      {
+        source: "/:path*",
+        headers: [
+          { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+          { key: "X-Content-Type-Options", value: "nosniff" },
+          { key: "X-Frame-Options", value: "SAMEORIGIN" },
+          { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=()" },
+          { key: "X-Accel-Buffering", value: "no" },
+        ],
+      },
+      {
+        source: "/.well-known/apple-app-site-association",
+        headers: [
+          { key: "Content-Type", value: "application/json" },
+        ],
+      },
+      {
+        source: "/apple-app-site-association",
+        headers: [
+          { key: "Content-Type", value: "application/json" },
+        ],
+      },
+      {
+        source: "/.well-known/assetlinks.json",
+        headers: [
+          { key: "Content-Type", value: "application/json" },
+        ],
+      },
+      {
+        source: "/assetlinks.json",
+        headers: [
+          { key: "Content-Type", value: "application/json" },
+        ],
+      },
+      {
+        source: "/sw.js",
+        headers: [
+          { key: "Content-Type", value: "application/javascript; charset=utf-8" },
+          { key: "Cache-Control", value: "no-cache, no-store, must-revalidate" },
+        ],
+      },
+      {
+        source: "/firebase-messaging-sw.js",
+        headers: [
+          { key: "Content-Type", value: "application/javascript; charset=utf-8" },
+          { key: "Cache-Control", value: "no-cache, no-store, must-revalidate" },
+        ],
+      },
+    ];
   },
 };
 

@@ -94,7 +94,10 @@ async function readCatalogPage<T>(entity: string, locale: Locale, page: number, 
 
 // Successful, validated public catalogue pages only; no user-specific state.
 const cachedCatalogPage = unstable_cache(
-  async (entity: string, locale: Locale, page: number, id: string | undefined, _upstream: string) => readCatalogPage<unknown>(entity, locale, page, undefined, id),
+  async (entity: string, locale: Locale, page: number, id: string | undefined, _upstream: string) => {
+    void _upstream;
+    return readCatalogPage<unknown>(entity, locale, page, undefined, id);
+  },
   ["discovery-public-catalog-v2"], { revalidate: 300 },
 );
 async function catalogPage<T>(entity: string, locale: Locale, page: number, search?: string, id?: string): Promise<CatalogResponse<T>> {

@@ -2518,3 +2518,231 @@
     z-index: 100;
   }
 }
+
+.statusPillStrip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 6px 0 12px;
+  margin-bottom: 6px;
+  scrollbar-width: none;
+}
+
+.statusPillStrip::-webkit-scrollbar {
+  display: none;
+}
+
+.statusPill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 12px;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  background: var(--white);
+  color: var(--midnight);
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.statusPill:hover {
+  border-color: var(--action-blue);
+}
+
+.statusPillActive {
+  background: var(--midnight);
+  border-color: var(--midnight);
+  color: var(--white);
+}
+
+.statusPillBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 9px;
+  background: var(--canvas);
+  color: var(--muted-strong);
+  font-size: 10px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.statusPillActive .statusPillBadge {
+  background: rgb(255 255 255 / 20%);
+  color: var(--white);
+}
+
+.statusPillLiveBadge {
+  background: #ef4444;
+  color: #ffffff;
+}
+
+.liveDotPulse {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #ef4444;
+  box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
+  animation: livePulse 1.8s infinite;
+}
+
+@keyframes livePulse {
+  0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+  70% { box-shadow: 0 0 0 6px rgba(239, 68, 68, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+}
+
+.competitionHeaderActions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.standingsLink {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 8px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--action-blue);
+  border-radius: 4px;
+  text-decoration: none;
+  background: rgb(0 102 204 / 8%);
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.standingsLink:hover {
+  background: rgb(0 102 204 / 16%);
+  color: var(--signal-blue);
+}
+
+.oraclePicksCountBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 7px;
+  border-radius: 4px;
+  background: rgb(245 158 11 / 12%);
+  color: #b45309;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.countryAccordion {
+  margin-top: 14px;
+  border-top: 1px solid var(--border);
+  padding-top: 10px;
+}
+
+.countryHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 6px 8px;
+  background: transparent;
+  border: 0;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted-strong);
+  cursor: pointer;
+}
+
+.countryHeader:hover {
+  background: rgb(0 0 0 / 4%);
+}
+
+.countryList {
+  display: grid;
+  gap: 2px;
+  margin-top: 4px;
+  max-height: 320px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+}
+
+.countryRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 5px 8px;
+  background: transparent;
+  border: 0;
+  border-radius: 5px;
+  font-size: 12px;
+  color: var(--midnight);
+  cursor: pointer;
+  text-align: left;
+}
+
+.countryRow:hover {
+  background: rgb(0 102 204 / 6%);
+  color: var(--action-blue);
+}
+
+.countryRowLeft {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.countryLeagues {
+  display: grid;
+  gap: 1px;
+  padding-left: 18px;
+  margin: 2px 0 6px;
+  border-left: 1px solid var(--border);
+}
+
+.countryLeagueItem {
+  display: block;
+  padding: 4px 8px;
+  font-size: 11px;
+  color: var(--muted-strong);
+  text-decoration: none;
+  border-radius: 4px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.countryLeagueItem:hover {
+  color: var(--action-blue);
+  background: rgb(0 102 204 / 6%);
+}
+
+.spotlightCard {
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  padding: 14px;
+  box-shadow: 0 2px 8px rgb(7 17 31 / 4%);
+}
+
+.spotlightHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--action-blue);
+  letter-spacing: 0.03em;
+}
+

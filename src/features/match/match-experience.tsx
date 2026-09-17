@@ -31,6 +31,7 @@ import {
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
+import { AdSlot } from "@/components/ads/ad-slot";
 import { MboMark } from "@/components/brand/brand-marks";
 import { MobileProductMenu } from "@/components/navigation/mobile-product-menu";
 import { locales, type Locale } from "@/i18n/config";
@@ -143,9 +144,17 @@ function StreakSection({ match, onOpen, locale, copy }: { match: MatchDetail; on
 }
 
 function H2HSection({ match, locale, copy }: { match: MatchDetail; locale: Locale; copy: MatchLabels }) {
+  const [venueFilter, setVenueFilter] = useState<"overall" | "home" | "away">("overall");
   if (match.availability.h2h !== "available" || !match.h2h.length) return null;
   const formatter = new Intl.DateTimeFormat(locale, { day: "2-digit", month: "short", year: "numeric" });
-  const summary = match.h2h.reduce((result, item) => {
+  
+  const filteredMeetings = match.h2h.filter((item) => {
+    if (venueFilter === "home") return item.home === match.home.name;
+    if (venueFilter === "away") return item.away === match.away.name || item.home === match.away.name;
+    return true;
+  });
+
+  const summary = filteredMeetings.reduce((result, item) => {
     if (item.score[0] === item.score[1]) result.draws += 1;
     else {
       const winner = item.score[0] > item.score[1] ? item.home : item.away;
@@ -154,12 +163,51 @@ function H2HSection({ match, locale, copy }: { match: MatchDetail; locale: Local
     }
     return result;
   }, { home: 0, draws: 0, away: 0 });
+
   return (
     <section className={styles.contentSection}>
-      <div className={styles.sectionHeading}><div><span>{copy.previousMeetings}</span><h2>{copy.headToHead}</h2></div><small>{copy.lastFive}</small></div>
-      <div className={styles.h2hSummary}><span><strong>{summary.home}</strong> {match.home.name}</span><span><strong>{summary.draws}</strong> {copy.draw}</span><span><strong>{summary.away}</strong> {match.away.name}</span></div>
+      <div className={styles.sectionHeading}>
+        <div><span>{copy.previousMeetings}</span><h2>{copy.headToHead}</h2></div>
+        <small>{copy.lastFive}</small>
+      </div>
+      <div className={styles.venueToggleBar} role="group" aria-label={copy.headToHead}>
+        <button
+          type="button"
+          className={`${styles.venueToggleButton} ${venueFilter === "overall" ? styles.venueToggleButtonActive : ""}`}
+          onClick={() => setVenueFilter("overall")}
+        >
+          {copy.overall}
+        </button>
+        <button
+          type="button"
+          className={`${styles.venueToggleButton} ${venueFilter === "home" ? styles.venueToggleButtonActive : ""}`}
+          onClick={() => setVenueFilter("home")}
+        >
+          {match.home.shortName} ({copy.home})
+        </button>
+        <button
+          type="button"
+          className={`${styles.venueToggleButton} ${venueFilter === "away" ? styles.venueToggleButtonActive : ""}`}
+          onClick={() => setVenueFilter("away")}
+        >
+          {match.away.shortName} ({copy.away})
+        </button>
+      </div>
+      <div className={styles.h2hSummary}>
+        <span><strong>{summary.home}</strong> {match.home.name}</span>
+        <span><strong>{summary.draws}</strong> {copy.draw}</span>
+        <span><strong>{summary.away}</strong> {match.away.name}</span>
+      </div>
       <div className={styles.h2hList}>
-        {match.h2h.map((item) => <div key={item.id}><time>{formatter.format(new Date(item.date))}</time><span>{item.home}</span><strong>{item.score[0]} - {item.score[1]}</strong><span>{item.away}</span><small>{item.competition}</small></div>)}
+        {filteredMeetings.map((item) => (
+          <div key={item.id}>
+            <time>{formatter.format(new Date(item.date))}</time>
+            <span>{item.home}</span>
+            <strong>{item.score[0]} - {item.score[1]}</strong>
+            <span>{item.away}</span>
+            <small>{item.competition}</small>
+          </div>
+        ))}
       </div>
     </section>
   );
@@ -314,26 +362,143 @@ export function MatchExperience({ match: initialMatch, locale }: { match: MatchD
             {(match.venue || match.referee) && <div className={styles.venueLine}>{match.venue && <span><MapPin size={13} /> {match.venue}{match.city ? `, ${match.city}` : ""}</span>}{match.referee && <span><CircleDot size={13} /> {copy.referee}: {match.referee}</span>}</div>}
           </section>
 
+          <AdSlot format="leaderboard" label={copy.advertisement} />
+
           <nav className={styles.matchTabs} aria-label={copy.matchSections}>{tabs.map((tab) => <button className={activeTab === tab.id ? styles.tabActive : ""} key={tab.id} onClick={() => setActiveTab(tab.id)}>{tab.label}{tab.id === "oracle" && <span>{match.oracleScore}</span>}</button>)}</nav>
 
           <div className={styles.contentStack}>
-            {activeTab === "overview" && <TimelineSection match={match} locale={locale} copy={copy} />}
-            {visibleSections.oracle && (activeTab === "overview" || activeTab === "oracle") && <OraclePanel match={match} copy={copy} outcomes={outcomes} locale={locale} />}
-            {activeTab === "overview" && visibleSections.streaks && <StreakSection match={match} locale={locale} copy={copy} onOpen={() => navigate(`streaks?teamId=${encodeURIComponent(match.home.id)}`)} />}
-            {(activeTab === "stats" || (activeTab === "overview" && match.availability.statistics==="available")) && <StatsSection match={match} locale={locale} copy={copy} />}
-            {(activeTab === "overview" || activeTab === "h2h") && <H2HSection match={match} locale={locale} copy={copy} />}
-            {(activeTab === "overview" || activeTab === "h2h") && <RecentResults match={match} locale={locale} copy={copy} />}
-            {activeTab==="stats" && <PlayerStatistics match={match} locale={locale}/>}
-            {(activeTab === "lineups" || (activeTab === "overview" && match.availability.lineups==="available")) && <LineupsSection match={match} copy={copy} locale={locale} />}
+            {activeTab === "overview" && (
+              <>
+                <TimelineSection match={match} locale={locale} copy={copy} />
+                {visibleSections.oracle && (
+                  <OraclePanel match={match} copy={copy} outcomes={outcomes} locale={locale} />
+                )}
+                {visibleSections.streaks && (
+                  <StreakSection
+                    match={match}
+                    locale={locale}
+                    copy={copy}
+                    onOpen={() => navigate(`streaks?teamId=${encodeURIComponent(match.home.id)}`)}
+                  />
+                )}
+                <AdSlot format="in-feed" label={copy.advertisement} />
+                <div className={styles.overviewTeaserGrid}>
+                  {visibleSections.h2h && (
+                    <button
+                      type="button"
+                      className={styles.overviewTeaserCard}
+                      onClick={() => setActiveTab("h2h")}
+                    >
+                      <div className={styles.overviewTeaserCardLeft}>
+                        <div className={styles.overviewTeaserIcon}>
+                          <CalendarDays size={18} />
+                        </div>
+                        <div className={styles.overviewTeaserText}>
+                          <strong>{copy.headToHead}</strong>
+                          <span>{copy.viewH2hForm}</span>
+                        </div>
+                      </div>
+                      <ChevronRight size={18} />
+                    </button>
+                  )}
+                  {visibleSections.lineups && (
+                    <button
+                      type="button"
+                      className={styles.overviewTeaserCard}
+                      onClick={() => setActiveTab("lineups")}
+                    >
+                      <div className={styles.overviewTeaserCardLeft}>
+                        <div className={styles.overviewTeaserIcon}>
+                          <UserCircle size={18} />
+                        </div>
+                        <div className={styles.overviewTeaserText}>
+                          <strong>{copy.lineups}</strong>
+                          <span>{copy.viewLineupsPitch}</span>
+                        </div>
+                      </div>
+                      <ChevronRight size={18} />
+                    </button>
+                  )}
+                  {visibleSections.stats && (
+                    <button
+                      type="button"
+                      className={styles.overviewTeaserCard}
+                      onClick={() => setActiveTab("stats")}
+                    >
+                      <div className={styles.overviewTeaserCardLeft}>
+                        <div className={styles.overviewTeaserIcon}>
+                          <BarChart3 size={18} />
+                        </div>
+                        <div className={styles.overviewTeaserText}>
+                          <strong>{copy.statistics}</strong>
+                          <span>{copy.viewFullStats}</span>
+                        </div>
+                      </div>
+                      <ChevronRight size={18} />
+                    </button>
+                  )}
+                </div>
+              </>
+            )}
+            {activeTab === "oracle" && visibleSections.oracle && (
+              <>
+                <OraclePanel match={match} copy={copy} outcomes={outcomes} locale={locale} />
+                {visibleSections.streaks && (
+                  <StreakSection
+                    match={match}
+                    locale={locale}
+                    copy={copy}
+                    onOpen={() => navigate(`streaks?teamId=${encodeURIComponent(match.home.id)}`)}
+                  />
+                )}
+              </>
+            )}
+            {activeTab === "h2h" && (
+              <>
+                <H2HSection match={match} locale={locale} copy={copy} />
+                <AdSlot format="in-feed" label={copy.advertisement} />
+                <RecentResults match={match} locale={locale} copy={copy} />
+              </>
+            )}
+            {activeTab === "stats" && (
+              <>
+                <StatsSection match={match} locale={locale} copy={copy} />
+                <PlayerStatistics match={match} locale={locale} />
+              </>
+            )}
+            {activeTab === "lineups" && (
+              <LineupsSection match={match} copy={copy} locale={locale} />
+            )}
           </div>
         </main>
 
         <aside className={`${shellStyles.intelligenceRail} ${styles.intelligenceRail}`}>
+          <AdSlot format="rectangle" label={copy.advertisement} />
           <section className={styles.railPanel}><header><span>{copy.matchInformation}</span><CalendarDays size={15} /></header><dl><div><dt>{copy.kickoff}</dt><dd>{dateFormatter.format(kickoff)}, {timeFormatter.format(kickoff)}</dd></div>{match.venue && <div><dt>{copy.venue}</dt><dd>{match.venue}</dd></div>}{match.competition.round && <div><dt>{copy.round}</dt><dd>{match.competition.round}</dd></div>}{match.referee && <div><dt>{copy.referee}</dt><dd>{match.referee}</dd></div>}</dl></section>
           {match.availability.standings === "available" && match.standings.length > 0 && <section className={styles.railPanel}><header><span>{copy.standings}</span><Trophy size={15} /></header><div className={styles.standingsHeader}><span>#</span><span>{copy.team}</span><span>{copy.played}</span><span>{copy.points}</span></div>{match.standings.map((row) => <div className={`${styles.standingRow} ${row.highlighted ? styles.standingHighlighted : ""}`} key={row.team}><span>{row.position}</span><strong>{row.team}</strong><span>{row.played}</span><b>{row.points}</b></div>)}</section>}
           <section className={`${styles.railPanel} ${styles.railEvidence}`}><header><span>{copy.evidenceNote}</span><Database size={15} /></header><p>{copy.evidenceSignals}</p></section>
+          <AdSlot format="half-page" label={copy.advertisement} />
         </aside>
       </div>
+
+      {match.oracleMarket.available && (
+        <div className={styles.mobileStickyActionPill}>
+          <div className={styles.mobileStickyActionPillLeft}>
+            <span>Oracle</span>
+            <strong>{match.oracleMarket.selection}</strong>
+            {match.oracleMarket.odds && <small>({match.oracleMarket.odds})</small>}
+          </div>
+          <button
+            type="button"
+            className={styles.mobileStickyActionPillButton}
+            onClick={() => navigate("multi-picks")}
+          >
+            <Sparkles size={13} /> {copy.addToMultiPicks}
+          </button>
+        </div>
+      )}
+
+      <AdSlot format="mobile-anchor" label={copy.advertisement} />
 
       <nav className={shellStyles.mobileBottomNav} aria-label={copy.mobileNavigation}>{navItems.slice(0, 5).map(({ key, icon: Icon, route }) => <button key={key} className={key === "today" ? shellStyles.mobileNavActive : ""} onClick={() => navigate(route)}><Icon size={19} /><span>{common[key]}</span></button>)}</nav>
     </div>

@@ -4,6 +4,8 @@ import { competitionShortcuts } from "./competition-shortcuts";
 import { predictionMarketLabel } from "@/i18n/prediction-markets";
 import { marketPresentation, valueViewLabels } from "@/features/discovery/market-presentation";
 import { discoveryLabels } from "@/features/discovery/labels";
+import { entitySlug } from "@/features/discovery/public-id";
+import { AdSlot } from "@/components/ads/ad-slot";
 import Link from "next/link";
 import { PageEditorial } from "@/components/editorial/page-editorial";
 
@@ -36,14 +38,13 @@ import {
   ShieldCheck,
   Sparkles,
   Star,
-  Trophy,
   UserCircle,
   WandSparkles,
   X,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { MboMark } from "@/components/brand/brand-marks";
 import { MobileProductMenu } from "@/components/navigation/mobile-product-menu";
 import { locales, localeNames, type Locale } from "@/i18n/config";
@@ -57,7 +58,7 @@ import { valueMarket } from "./value-picks";
 import type { Competition, Match, OracleMarket, PredictionMarket, Team, TipOutcome, TodayData } from "./types";
 import styles from "./today-experience.module.css";
 
-type Filter = "all" | "live" | "oracle" | "following";
+type Filter = "all" | "live" | "oracle" | "finished" | "following";
 type PredictionLens = "best" | "value" | "top" | Exclude<PredictionMarket, "ORACLE_PICK">;
 function stateForLiveCode(code: string): Match["state"] { if (["FT", "AET", "PEN"].includes(code)) return "finished"; if (["NS", "TBD", "PST", "CANC", "ABD", "AWD", "WO"].includes(code)) return "scheduled"; return "live"; }
 
@@ -75,14 +76,8 @@ function mergeTodayFeed(current: TodayData, next: TodayData): TodayData {
   return { ...current, freshness: next.freshness, pagination: next.pagination, oraclePickId: next.oraclePickId, oraclePick: next.oraclePick ?? current.oraclePick, competitions: [...competitions.values()] };
 }
 
-// Launch presentation only. Keep the existing pick-selection workflow intact
-// so it can be restored when the product flow is ready for review.
 const SHOW_TODAY_ADD_TO_PICKS = false;
-// Preserve these launch surfaces until their production contracts are connected.
-// Keeping them out of the UI prevents dead controls and non-canonical directory links.
-const SHOW_TODAY_STANDINGS = false;
 const SHOW_TODAY_SORT = false;
-const SHOW_TODAY_COMPETITION_FOLLOWING = false;
 
 
 const marketOptions = [
@@ -157,15 +152,6 @@ function getMarketOptionLabel(locale: Locale, value: PredictionLens, copy: Today
   return predictionMarketLabel(locale, value);
 }
 
-
-const showMoreLabels: Record<Locale, string> = {
-  en: "Show more competitions",
-  es: "Mostrar más competiciones",
-  fr: "Afficher plus de compétitions",
-  de: "Weitere Wettbewerbe anzeigen",
-  it: "Mostra altre competizioni",
-  pt: "Mostrar mais competições",
-};
 
 
 const marketEmptyLabels: Record<Locale, [string, string]> = {
@@ -462,6 +448,7 @@ function CompetitionBlock({
   collapsed,
   copy,
   statuses,
+  locale,
   onToggle,
   onFollow,
   onAdd,
@@ -475,11 +462,17 @@ function CompetitionBlock({
   collapsed: boolean;
   copy: TodayLabels;
   statuses: { won: string; lost: string; void: string };
+  locale: Locale;
   onToggle: () => void;
   onFollow: (id: string) => void;
   onAdd: (match: Match) => void;
   onSelect: (match: Match) => void;
 }) {
+  const oraclePicksCount = useMemo(
+    () => competition.matches.filter((m) => m.markets.ORACLE_PICK?.available).length,
+    [competition.matches],
+  );
+
   return (
     <section className={styles.competitionBlock}>
       <header className={styles.competitionHeader}>
@@ -493,7 +486,21 @@ function CompetitionBlock({
             <ChevronDown className={collapsed ? styles.chevronCollapsed : ""} size={17} />
           </button>
         </h2>
-        {SHOW_TODAY_STANDINGS && <button className={styles.textButton}>{copy.standings}</button>}
+        <div className={styles.competitionHeaderActions}>
+          {oraclePicksCount > 0 && (
+            <span className={styles.oraclePicksCountBadge} title={`${oraclePicksCount} ${copy.oraclePick}`}>
+              <Sparkles size={11} aria-hidden="true" />
+              <span>{oraclePicksCount}</span>
+            </span>
+          )}
+          <Link
+            href={`/${locale}/competitions/${entitySlug(competition.name, competition.id)}`}
+            prefetch={false}
+            className={styles.standingsLink}
+          >
+            {copy.standings}
+          </Link>
+        </div>
       </header>
       {!collapsed && (
         <div>
@@ -536,7 +543,57 @@ export function TodayExperience({ data, locale, scope = "today", heading, initia
   const [followed, setFollowed] = useState(new Set<string>());
   const [added, setAdded] = useState(new Set<string>());
   const [collapsed, setCollapsed] = useState(new Set<string>());
+  const [countriesOpen, setCountriesOpen] = useState(false);
+  const [expandedCountries, setExpandedCountries] = useState<Set<string>>(new Set());
+
+  const defaultPinnedCompetitions = useMemo(() => {
+    if (pinnedCompetitions && pinnedCompetitions.length > 0) {
+      return pinnedCompetitions;
+    }
+    return feed.competitions.slice(0, 8).map((c) => ({
+      id: c.id,
+      name: c.name,
+      countryCode: c.countryCode,
+    }));
+  }, [pinnedCompetitions, feed.competitions]);
+
+  const pinnedShortcuts = useMemo(
+    () => competitionShortcuts(defaultPinnedCompetitions, locale),
+    [defaultPinnedCompetitions, locale],
+  );
+
+  const countryGroups = useMemo(() => {
+    const map = new Map<string, { country: string; countryCode: string; competitions: Array<{ id: string; name: string; href: string }> }>();
+    for (const comp of feed.competitions) {
+      const key = comp.country || comp.countryCode;
+      if (!key) continue;
+      if (!map.has(key)) {
+        map.set(key, { country: comp.country, countryCode: comp.countryCode, competitions: [] });
+      }
+      try {
+        const href = `/${locale}/competitions/${entitySlug(comp.name, comp.id)}`;
+        map.get(key)!.competitions.push({ id: comp.id, name: comp.name, href });
+      } catch {}
+    }
+    return Array.from(map.values()).sort((a, b) => a.country.localeCompare(b.country));
+  }, [feed.competitions, locale]);
+
+  const filterCounts = useMemo(() => {
+    let all = 0, live = 0, oracle = 0, finished = 0;
+    for (const comp of feed.competitions) {
+      for (const m of comp.matches) {
+        all++;
+        if (m.state === "live") live++;
+        if (m.oracleScore >= 80) oracle++;
+        if (m.state === "finished") finished++;
+      }
+    }
+    return { all, live, oracle, finished };
+  }, [feed.competitions]);
+
   const [selectedMatch, setSelectedMatch] = useState<Match | null>(() => (initialMarket === "best" ? data.oraclePick : null) ?? allMatches[0] ?? null);
+  const activeSpotlightMatch = selectedMatch ?? (initialMarket === "best" ? data.oraclePick : null) ?? allMatches[0] ?? null;
+  const activeSpotlightMarket = activeSpotlightMatch ? getMarket(activeSpotlightMatch, marketLens) : null;
   useEffect(() => {
     const fixtureCount = data.competitions.reduce((total, competition) => total + competition.matches.length, 0);
     void AnalyticsEvents.todayViewed({ locale, date: data.dateIso.slice(0, 10), fixtureCount });
@@ -691,6 +748,7 @@ export function TodayExperience({ data, locale, scope = "today", heading, initia
             filter === "all" ||
             (filter === "live" && match.state === "live") ||
             (filter === "oracle" && match.oracleScore >= 80) ||
+            (filter === "finished" && match.state === "finished") ||
             (filter === "following" && followed.has(match.id));
           return matchesFilter && (marketLens !== 'value' && marketLens !== 'top' || Boolean(match.rankedSelection) && (!match.kickoffAt || Date.parse(match.kickoffAt)>clockNow));
         }),
@@ -816,8 +874,6 @@ export function TodayExperience({ data, locale, scope = "today", heading, initia
 
   const dateFormatter = new Intl.DateTimeFormat(localeTags[locale], { weekday: "long", month: "long", day: "numeric" });
   const shortDateFormatter = new Intl.DateTimeFormat(localeTags[locale], { weekday: "short" });
-  const selectedMarket = selectedMatch ? getMarket(selectedMatch, marketLens) : null;
-  const selectedPickKey = selectedMatch ? getPickKey(selectedMatch, marketLens) : "";
   const selectedPicks = Array.from(added).flatMap((key) => {
     const [matchId, marketKey] = key.split("::") as [string, PredictionMarket];
     const match = allMatches.find((item) => item.id === matchId);
@@ -936,18 +992,77 @@ export function TodayExperience({ data, locale, scope = "today", heading, initia
             ))}
           </nav>
 
-          {SHOW_TODAY_COMPETITION_FOLLOWING && <div className={styles.sidebarSection}>
-            <div className={styles.sidebarHeading}>
-              <span>{copy.following}</span>
-              <button title={copy.manageFollowing} aria-label={copy.manageFollowing}><Plus size={16} /></button>
+          {pinnedShortcuts.length > 0 && (
+            <div className={styles.sidebarSection}>
+              <div className={styles.sidebarHeading}>
+                <span>{copy.following}</span>
+              </div>
+              {pinnedShortcuts.map(({ id, name, countryCode, href }) => (
+                <Link className={styles.pinnedLeague} key={id} href={href} prefetch={false}>
+                  <span className={styles.countryCode}>{countryCode}</span>
+                  <strong>{name}</strong>
+                </Link>
+              ))}
             </div>
-            {competitionShortcuts(pinnedCompetitions, locale).map(({ id, name, countryCode, href }) => (
-              <Link className={styles.pinnedLeague} key={id} href={href} prefetch={false}>
-                <span>{countryCode}</span>
-                <strong>{name}</strong>
-              </Link>
-            ))}
-          </div>}
+          )}
+
+          {countryGroups.length > 0 && (
+            <div className={styles.countryAccordion}>
+              <button
+                type="button"
+                className={styles.countryHeader}
+                onClick={() => setCountriesOpen((prev) => !prev)}
+                aria-expanded={countriesOpen}
+              >
+                <span>{copy.countries} ({countryGroups.length})</span>
+                <ChevronDown size={14} className={countriesOpen ? "" : styles.chevronCollapsed} />
+              </button>
+              {countriesOpen && (
+                <div className={styles.countryList}>
+                  {countryGroups.map((group) => {
+                    const isExpanded = expandedCountries.has(group.country);
+                    return (
+                      <div key={group.country}>
+                        <button
+                          type="button"
+                          className={styles.countryRow}
+                          onClick={() =>
+                            setExpandedCountries((prev) => {
+                              const next = new Set(prev);
+                              if (next.has(group.country)) next.delete(group.country);
+                              else next.add(group.country);
+                              return next;
+                            })
+                          }
+                          aria-expanded={isExpanded}
+                        >
+                          <span className={styles.countryRowLeft}>
+                            <span className={styles.countryCode}>{group.countryCode}</span>
+                            <span>{group.country}</span>
+                          </span>
+                          <ChevronDown size={13} className={isExpanded ? "" : styles.chevronCollapsed} />
+                        </button>
+                        {isExpanded && (
+                          <div className={styles.countryLeagues}>
+                            {group.competitions.map((comp) => (
+                              <Link
+                                key={comp.id}
+                                href={comp.href}
+                                prefetch={false}
+                                className={styles.countryLeagueItem}
+                              >
+                                {comp.name}
+                              </Link>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          )}
 
           <div className={styles.sidebarFooter}>
             <Link href={`/${locale}/competitions`} prefetch={false}><Globe2 size={17} /> {common.allCompetitions}</Link>
@@ -967,6 +1082,8 @@ export function TodayExperience({ data, locale, scope = "today", heading, initia
             </div>
           </div>
 
+          <AdSlot format="leaderboard" label={copy.advertisement} />
+
           <ScopeMarketNav locale={locale} scope={scope} marketLens={marketLens} dateIso={feed.dateIso} common={common} />
 
           <section className={styles.dateRail} aria-label={copy.matchDate}>
@@ -985,17 +1102,49 @@ export function TodayExperience({ data, locale, scope = "today", heading, initia
           </section>
 
           <section className={styles.feedToolbar}>
-            <div className={styles.filterTabs} role="tablist" aria-label={copy.matchFilters}>
-              {([
-                ["all", copy.all],
-                ["live", copy.live],
-                ["oracle", copy.oracle80],
-                ["following", copy.following],
-              ] as const).filter(([value]) => SHOW_TODAY_COMPETITION_FOLLOWING || value !== "following").map(([value, label]) => (
-                <button key={value} onClick={() => void selectFilter(value)} className={filter === value ? styles.filterActive : ""} role="tab" aria-selected={filter === value}>
-                  {value === "live" && <span className={styles.liveDot} />}{label}
-                </button>
-              ))}
+            <div className={styles.statusPillStrip} role="tablist" aria-label={copy.matchFilters}>
+              <button
+                type="button"
+                role="tab"
+                aria-selected={filter === "all"}
+                className={`${styles.statusPill} ${filter === "all" ? styles.statusPillActive : ""}`}
+                onClick={() => void selectFilter("all")}
+              >
+                <span>{copy.all}</span>
+                <small className={styles.statusPillBadge}>{filterCounts.all}</small>
+              </button>
+              <button
+                type="button"
+                role="tab"
+                aria-selected={filter === "live"}
+                className={`${styles.statusPill} ${filter === "live" ? styles.statusPillActive : ""}`}
+                onClick={() => void selectFilter("live")}
+              >
+                <span className={styles.liveDotPulse} aria-hidden="true" />
+                <span>{copy.live}</span>
+                {filterCounts.live > 0 && <small className={`${styles.statusPillBadge} ${styles.statusPillLiveBadge}`}>{filterCounts.live}</small>}
+              </button>
+              <button
+                type="button"
+                role="tab"
+                aria-selected={filter === "oracle"}
+                className={`${styles.statusPill} ${filter === "oracle" ? styles.statusPillActive : ""}`}
+                onClick={() => void selectFilter("oracle")}
+              >
+                <Sparkles size={13} aria-hidden="true" />
+                <span>{copy.oracle80}</span>
+                <small className={styles.statusPillBadge}>{filterCounts.oracle}</small>
+              </button>
+              <button
+                type="button"
+                role="tab"
+                aria-selected={filter === "finished"}
+                className={`${styles.statusPill} ${filter === "finished" ? styles.statusPillActive : ""}`}
+                onClick={() => void selectFilter("finished")}
+              >
+                <span>{copy.finished}</span>
+                <small className={styles.statusPillBadge}>{filterCounts.finished}</small>
+              </button>
             </div>
             {SHOW_TODAY_SORT && <button className={styles.sortButton}><ListFilter size={17} /> {copy.sort}</button>}
           </section>
@@ -1122,26 +1271,31 @@ export function TodayExperience({ data, locale, scope = "today", heading, initia
                 </button>
               </div>
             )}
-            {!loadingView && !searchLoading && !viewFailed && !searchFailed && visibleCompetitions.map((competition) => (
-              <CompetitionBlock
-                key={competition.id}
-                competition={competition}
-                marketLens={marketLens}
-                followed={followed}
-                added={added}
-                selectedId={selectedMatch?.id ?? ""}
-                collapsed={query.trim() ? false : collapsed.has(competition.id)}
-                copy={copy}
-                statuses={statuses}
-                onToggle={() => toggleSet(setCollapsed, competition.id)}
-                onFollow={(id) => {void toggleSaved(id)}}
-                onAdd={(match) => toggleSet(setAdded, getPickKey(match, marketLens))}
-                onSelect={(match) => {
-                  if (match.slug) {
-                    router.push(`/${locale}/match/${match.slug}`);
-                  }
-                }}
-              />
+            {!loadingView && !searchLoading && !viewFailed && !searchFailed && visibleCompetitions.map((competition, index) => (
+              <Fragment key={competition.id}>
+                {index > 0 && index % 10 === 0 && (
+                  <AdSlot format="in-feed" label={copy.advertisement} />
+                )}
+                <CompetitionBlock
+                  competition={competition}
+                  marketLens={marketLens}
+                  followed={followed}
+                  added={added}
+                  selectedId={selectedMatch?.id ?? ""}
+                  collapsed={query.trim() ? false : collapsed.has(competition.id)}
+                  copy={copy}
+                  statuses={statuses}
+                  locale={locale}
+                  onToggle={() => toggleSet(setCollapsed, competition.id)}
+                  onFollow={(id) => {void toggleSaved(id)}}
+                  onAdd={(match) => toggleSet(setAdded, getPickKey(match, marketLens))}
+                  onSelect={(match) => {
+                    if (match.slug) {
+                      router.push(`/${locale}/match/${match.slug}`);
+                    }
+                  }}
+                />
+              </Fragment>
             ))}
             {!loadingView && !searchLoading && !viewFailed && !searchFailed && filteredCompetitions.length === 0 && (Boolean(query.trim()) || !feed.pagination.hasMore) && (
               <div className={styles.emptyState}>
@@ -1182,89 +1336,67 @@ export function TodayExperience({ data, locale, scope = "today", heading, initia
           </div>
         </main>
 
-        {selectedMatch && selectedMarket && <aside className={styles.intelligenceRail}>
-          <section className={styles.oraclePanel}>
-            <div className={styles.oraclePanelHeader}>
-              <span><Sparkles size={15} /> {copy.oraclePick}</span>
-            </div>
-            <div className={styles.selectedFixture}>
-              <div className={styles.fixtureTeams}>
-                <span><Crest team={selectedMatch.home} />{selectedMatch.home.name}</span>
-                <strong>vs</strong>
-                <span><Crest team={selectedMatch.away} />{selectedMatch.away.name}</span>
+        <aside className={styles.intelligenceRail}>
+          <AdSlot format="rectangle" label={copy.advertisement} />
+
+          {activeSpotlightMatch && activeSpotlightMarket && (
+            <section className={styles.oraclePanel}>
+              <div className={styles.oraclePanelHeader}>
+                <span><Sparkles size={15} /> {copy.oraclePick}</span>
               </div>
-              <div className={styles.fixtureTime}><Clock3 size={14} /> {selectedMatch.kickoff}</div>
-            </div>
-            <div className={styles.oracleDecision}>
-              <div className={styles.oracleScoreMetric} title={interpolate(copy.oracleScore, { score: selectedMarket.confidence })}>
-                <OracleGauge score={selectedMarket.confidence} />
+              <div className={styles.selectedFixture}>
+                <div className={styles.fixtureTeams}>
+                  <span><Crest team={activeSpotlightMatch.home} />{activeSpotlightMatch.home.name}</span>
+                  <strong>vs</strong>
+                  <span><Crest team={activeSpotlightMatch.away} />{activeSpotlightMatch.away.name}</span>
+                </div>
+                <div className={styles.fixtureTime}><Clock3 size={14} /> {activeSpotlightMatch.kickoff}</div>
               </div>
-              <div>
-                <h2>{selectedMarket.selection}</h2>
-                <span>{selectedMarket.odds ?? "—"} {copy.odds}</span>
+              <div className={styles.oracleDecision}>
+                <div className={styles.oracleScoreMetric} title={interpolate(copy.oracleScore, { score: activeSpotlightMarket.confidence })}>
+                  <OracleGauge score={activeSpotlightMarket.confidence} />
+                </div>
+                <div>
+                  <h2>{activeSpotlightMarket.selection}</h2>
+                  <span>{activeSpotlightMarket.odds ?? "—"} {copy.odds}</span>
+                </div>
               </div>
-            </div>
-            {selectedMarket.outcome && (
-              <div className={styles.settlementBanner}>
-                <OutcomeBadge outcome={selectedMarket.outcome} labels={statuses} />
-                <span>{copy.settledFullTime}</span>
-              </div>
-            )}
-            {selectedMatch.insight && <p className={styles.insight}>{translateInsight(locale, selectedMatch.insight)}</p>}
-            <div className={styles.panelActions}>
-              <button className={styles.primaryButton} disabled={!selectedMatch.slug} onClick={() => selectedMatch.slug && router.push(`/${locale}/match/${selectedMatch.slug}`)}>{copy.fullIntelligence} <ChevronRight size={16} /></button>
-              {SHOW_TODAY_ADD_TO_PICKS && (
-                <button
-                  className={styles.secondaryButton}
-                  onClick={() => selectedMarket.available && !selectedMarket.outcome && toggleSet(setAdded, selectedPickKey)}
-                  disabled={Boolean(selectedMarket.outcome) || !selectedMarket.available}
-                >
-                  {selectedMarket.outcome ? <CircleCheck size={16} /> : added.has(selectedPickKey) ? <Check size={16} /> : <Plus size={16} />}
-                  {selectedMarket.outcome ? copy.settled : added.has(selectedPickKey) ? copy.added : copy.myPicks}
-                </button>
+              {activeSpotlightMarket.outcome && (
+                <div className={styles.settlementBanner}>
+                  <OutcomeBadge outcome={activeSpotlightMarket.outcome} labels={statuses} />
+                  <span>{copy.settledFullTime}</span>
+                </div>
               )}
-            </div>
-          </section>
-
-          <section className={styles.builderPanel}>
-            <div className={styles.panelTitle}>
-              <span><WandSparkles size={17} /> {copy.myPicks}</span>
-              <small>{selectedPicks.length} {copy.selections}</small>
-            </div>
-            {selectedPicks.length === 0 ? (
-              <div className={styles.builderEmpty}>
-                <p>{copy.addPicksHelp}</p>
+              {activeSpotlightMatch.insight && <p className={styles.insight}>{translateInsight(locale, activeSpotlightMatch.insight)}</p>}
+              <div className={styles.panelActions}>
+                <button
+                  className={styles.primaryButton}
+                  disabled={!activeSpotlightMatch.slug}
+                  onClick={() => activeSpotlightMatch.slug && router.push(`/${locale}/match/${activeSpotlightMatch.slug}`)}
+                >
+                  {copy.fullIntelligence} <ChevronRight size={16} />
+                </button>
+                {SHOW_TODAY_ADD_TO_PICKS && (
+                  <button
+                    className={styles.secondaryButton}
+                    onClick={() => {
+                      const pickKey = getPickKey(activeSpotlightMatch, marketLens);
+                      if (activeSpotlightMarket.available && !activeSpotlightMarket.outcome) {
+                        toggleSet(setAdded, pickKey);
+                      }
+                    }}
+                    disabled={Boolean(activeSpotlightMarket.outcome) || !activeSpotlightMarket.available}
+                  >
+                    {activeSpotlightMarket.outcome ? <CircleCheck size={16} /> : added.has(getPickKey(activeSpotlightMatch, marketLens)) ? <Check size={16} /> : <Plus size={16} />}
+                    {activeSpotlightMarket.outcome ? copy.settled : added.has(getPickKey(activeSpotlightMatch, marketLens)) ? copy.added : copy.myPicks}
+                  </button>
+                )}
               </div>
-            ) : (
-              <div className={styles.builderList}>
-                {selectedPicks.map(({ key, match, market }) => (
-                  <div key={key}>
-                    <span>{match.home.shortName} vs {match.away.shortName}</span>
-                    <strong>{market.selection}</strong>
-                    <button onClick={() => toggleSet(setAdded, key)} aria-label={interpolate(copy.removePick, { pick: market.selection })}><X size={15} /></button>
-                  </div>
-                ))}
-                <button className={styles.analyzeButton} onClick={() => navigate("multi-picks/builder")}>{copy.buildMyAcca} <ChevronRight size={16} /></button>
-              </div>
-            )}
-          </section>
+            </section>
+          )}
 
-          <section className={styles.performancePanel}>
-            <div className={styles.panelTitle}>
-              <span><Trophy size={17} /> {copy.verifiedPerformance}</span>
-              <button aria-label={copy.methodology} title={copy.methodology}><ShieldCheck size={16} /></button>
-            </div>
-            <div className={styles.performanceMetric}>
-              <strong>{feed.performance.hitRate === null ? "—" : `${feed.performance.hitRate.toFixed(1)}%`}</strong>
-              <span>{copy.hitRate}</span>
-              <small>{feed.performance.period}</small>
-            </div>
-            <div className={styles.performanceDetails}>
-              <span><strong>{feed.performance.settled ?? "—"}</strong> {copy.settledPicks}</span>
-            </div>
-            <button className={styles.performanceLink} onClick={() => router.push(`/${locale}/results`)}>{copy.viewHistory} <ChevronRight size={16} /></button>
-          </section>
-        </aside>}
+          <AdSlot format="half-page" label={copy.advertisement} />
+        </aside>
       </div>
 
       {selectedPicks.length > 0 && (
@@ -1273,6 +1405,8 @@ export function TodayExperience({ data, locale, scope = "today", heading, initia
           <strong>{copy.buildAcca} <ChevronRight size={16} /></strong>
         </button>
       )}
+
+      <AdSlot format="mobile-anchor" label={copy.advertisement} />
 
       <nav className={styles.mobileBottomNav} aria-label={common.mobileNavigation}>
         {navItems.slice(0, 5).map(({ label, icon: Icon, active, route }) => (

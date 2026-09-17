@@ -357,3 +357,172 @@
 @media (prefers-reduced-motion: reduce) {
   .app *, .app *::before, .app *::after { scroll-behavior: auto !important; transition-duration: 0.01ms !important; }
 }
+
+.venueToggleBar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 12px 0 16px;
+  padding: 4px;
+  border-radius: 8px;
+  background: #f1f5f9;
+  width: fit-content;
+}
+
+.venueToggleButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 14px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 140ms ease, color 140ms ease, box-shadow 140ms ease;
+}
+
+.venueToggleButton:hover {
+  color: #0f172a;
+}
+
+.venueToggleButtonActive {
+  background: #ffffff;
+  color: #001f3f;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+}
+
+.overviewTeaserGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 12px;
+  margin-top: 14px;
+}
+
+.overviewTeaserCard {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--white);
+  color: var(--graphite);
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 140ms ease, box-shadow 140ms ease, transform 140ms ease;
+}
+
+.overviewTeaserCard:hover {
+  border-color: var(--action-blue);
+  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.08);
+  transform: translateY(-1px);
+}
+
+.overviewTeaserCardLeft {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.overviewTeaserIcon {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  background: #f0f7ff;
+  color: var(--action-blue);
+}
+
+.overviewTeaserText {
+  display: grid;
+  gap: 2px;
+}
+
+.overviewTeaserText strong {
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.overviewTeaserText span {
+  font-size: 11px;
+  color: var(--muted-strong);
+}
+
+.mobileStickyActionPill {
+  position: fixed;
+  bottom: 58px;
+  left: 12px;
+  right: 12px;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 16px;
+  border-radius: 999px;
+  background: #0b1523;
+  color: #ffffff;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.28);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+@media (min-width: 901px) {
+  .mobileStickyActionPill {
+    display: none;
+  }
+}
+
+.mobileStickyActionPillLeft {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.mobileStickyActionPillLeft span {
+  font-size: 11px;
+  color: #7dd3fc;
+  font-weight: 700;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.mobileStickyActionPillLeft strong {
+  font-size: 13px;
+  font-weight: 800;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.mobileStickyActionPillLeft small {
+  font-size: 11px;
+  color: #94a3b8;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.mobileStickyActionPillButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 14px;
+  border: 0;
+  border-radius: 999px;
+  background: #2563eb;
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.mobileStickyActionPillButton:hover {
+  background: #1d4ed8;
+}
+

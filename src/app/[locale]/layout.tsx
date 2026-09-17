@@ -5,6 +5,7 @@ import { WebVitals } from "@/components/observability/web-vitals";
 import { AnalyticsProvider } from "@/components/observability/analytics-provider";
 import { CookieConsentBanner } from "@/components/legal/cookie-consent-banner";
 import { SiteFooter } from "@/components/navigation/site-footer";
+import Script from "next/script";
 import "../globals.css";
 
 const manrope = Manrope({
@@ -22,6 +23,37 @@ export const metadata: Metadata = {
   applicationName: "MyBetOracle",
   title: { default: "MyBetOracle", template: "%s | MyBetOracle" },
   description: "Verified football intelligence, prediction markets, streak evidence and performance tracking.",
+  verification: {
+    google: "googlee80a038678157d65",
+  },
+  other: {
+    "google-adsense-account": "ca-pub-8194555862221451",
+  },
+  openGraph: {
+    type: "website",
+    siteName: "MyBetOracle",
+    title: "MyBetOracle - Football Intelligence & Multi-Picks",
+    description: "Verified football intelligence, prediction markets, streak evidence and performance tracking.",
+    images: [{
+      url: "https://res.cloudinary.com/codewithwhyte/image/upload/c_crop,w_1200,h_630/v1692965057/oracle.png",
+      width: 1200,
+      height: 630,
+      alt: "MyBetOracle",
+    }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    site: "@mybetoracle",
+    creator: "@mybetoracle",
+    title: "MyBetOracle - Football Intelligence & Multi-Picks",
+    description: "Verified football intelligence, prediction markets, streak evidence and performance tracking.",
+    images: ["https://res.cloudinary.com/codewithwhyte/image/upload/c_crop,w_1200,h_630/v1692965057/oracle.png"],
+  },
+  manifest: "/manifest.json",
+  icons: {
+    icon: "/favicon.ico",
+    apple: "/icons/maskable_icon_x192.png",
+  },
 };
 
 export default async function LocaleRootLayout({ children, params }: LayoutProps<"/[locale]">) {
@@ -30,6 +62,12 @@ export default async function LocaleRootLayout({ children, params }: LayoutProps
   return (
     <html lang={safeLocale}>
       <body className={`${manrope.variable} ${sora.variable}`}>
+        <Script
+          id="google-adsense"
+          src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${process.env.NEXT_PUBLIC_ADSENSE_CLIENT_ID || "ca-pub-8194555862221451"}`}
+          crossOrigin="anonymous"
+          strategy="lazyOnload"
+        />
         {children}
         <SiteFooter locale={safeLocale} />
         <WebVitals />

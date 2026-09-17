@@ -1,0 +1,58 @@
+# Firebase App Hosting configuration for MyBetOracle V3
+# Settings for Backend (on Cloud Run)
+runConfig:
+  minInstances: 0
+
+# Environment variables and secrets.
+env:
+  - variable: NEXT_PUBLIC_SITE_URL
+    value: https://www.mybetoracle.com
+    availability:
+      - BUILD
+      - RUNTIME
+  - variable: NEXT_PUBLIC_ADSENSE_CLIENT_ID
+    value: ca-pub-8194555862221451
+    availability:
+      - BUILD
+      - RUNTIME
+  - variable: NEXT_PUBLIC_FIREBASE_API_KEY
+    value: AIzaSyC4PN86hAr6MZVs-NQ2MdOoMxepf_juI10
+    availability:
+      - BUILD
+      - RUNTIME
+  - variable: NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN
+    value: mybetoracle.firebaseapp.com
+    availability:
+      - BUILD
+      - RUNTIME
+  - variable: NEXT_PUBLIC_FIREBASE_PROJECT_ID
+    value: mybetoracle
+    availability:
+      - BUILD
+      - RUNTIME
+  - variable: NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID
+    value: "7671119791"
+    availability:
+      - BUILD
+      - RUNTIME
+  - variable: NEXT_PUBLIC_FIREBASE_APP_ID
+    value: 1:7671119791:web:91f3506407640fcda6795a
+    availability:
+      - BUILD
+      - RUNTIME
+  - variable: NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID
+    value: G-W9WLR4T2E8
+    availability:
+      - BUILD
+      - RUNTIME
+  - variable: GENERATE_SOURCEMAP
+    value: "false"
+    availability:
+      - BUILD
+      - RUNTIME
+
+  # Secret parameters from Google Cloud Secret Manager
+  - variable: MYBETORACLE_SERVER_BASE_URL
+    secret: MYBETORACLE_SERVER_BASE_URL
+  - variable: MYBETORACLE_SERVER_SERVICE_KEY
+    secret: MYBETORACLE_SERVER_SERVICE_KEY

@@ -1,0 +1,26 @@
+{
+  "applinks": {
+    "apps": [],
+    "details": [
+      {
+        "appID": "6ZV98P32Y7.com.codewithwhyte.mybetoracle",
+        "paths": [
+          "/",
+          "/accumulators",
+          "/betslip",
+          "/vip"
+        ]
+      }
+    ]
+  },
+  "activitycontinuation": {
+    "apps": [
+      "6ZV98P32Y7.com.codewithwhyte.mybetoracle"
+    ]
+  },
+  "webcredentials": {
+    "apps": [
+      "6ZV98P32Y7.com.codewithwhyte.mybetoracle"
+    ]
+  }
+}

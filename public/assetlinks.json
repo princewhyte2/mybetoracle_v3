@@ -1,0 +1,13 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.codewithwhyte.mybetoracle",
+      "sha256_cert_fingerprints": [
+        "BA:98:2F:1E:90:4F:3F:56:B9:E3:D0:DD:22:8E:FD:B8:90:66:05:85:53:76:61:9B:8F:3A:6F:8E:21:4C:4D:75",
+        "FC:D8:89:F5:48:40:62:73:92:BD:31:81:7E:99:86:7B:5B:4D:EB:74:2B:37:4F:BB:56:7A:A3:05:1B:91:F1:38"
+      ]
+    }
+  }
+]
