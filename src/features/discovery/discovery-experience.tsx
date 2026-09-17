@@ -47,6 +47,17 @@ import type {
 import styles from "./discovery.module.css";
 import { discoveryLabels, interpolateDiscovery, type DiscoveryLabels } from "./labels";
 
+const discoveryFormatterCache = new Map<string, Intl.DateTimeFormat>();
+function getCachedDiscoveryFormatter(locale: string, options: Intl.DateTimeFormatOptions): Intl.DateTimeFormat {
+  const key = `${locale}:${JSON.stringify(options)}`;
+  let fmt = discoveryFormatterCache.get(key);
+  if (!fmt) {
+    fmt = new Intl.DateTimeFormat(locale, options);
+    discoveryFormatterCache.set(key, fmt);
+  }
+  return fmt;
+}
+
 const directoryActionLabels: Record<Locale, { more: string; loading: string; empty: string }> = {
   en: { more: "Show more", loading: "Loading verified entries…", empty: "No verified entries match this search." },
   es: { more: "Mostrar más", loading: "Cargando entradas verificadas…", empty: "No hay entradas verificadas para esta búsqueda." },
@@ -173,7 +184,7 @@ function FixtureRow({
         <time className={fixture.state === "live" ? styles.live : ""}>
           {fixture.state === "live"
             ? getMessages(locale).common.live.toUpperCase()
-            : new Intl.DateTimeFormat(locale, {
+            : getCachedDiscoveryFormatter(locale, {
                 hour: "2-digit",
                 minute: "2-digit",
               }).format(kickoff)}
@@ -810,7 +821,7 @@ function Detail({
                   </span>
                   <span>
                     <strong>{item.name}</strong>
-                    <small>{item.fixtures} {copy.fixtures}</small>
+                    {"country" in item && item.country ? <small>{item.country}</small> : null}
                   </span>
                   <ChevronRight />
                 </button>
@@ -845,13 +856,13 @@ function CalendarView({ locale, data }: { locale: Locale; data: DiscoveryData })
               onClick={() => router.push(`/${locale}/calendar?date=${dateValue}`)}
             >
               <span>
-                {new Intl.DateTimeFormat(locale, {
+                {getCachedDiscoveryFormatter(locale, {
                   weekday: "short",
                 }).format(date)}
               </span>
               <strong>{date.getUTCDate()}</strong>
               <small>
-                {new Intl.DateTimeFormat(locale, { month: "short" }).format(
+                {getCachedDiscoveryFormatter(locale, { month: "short" }).format(
                   date,
                 )}
               </small>
@@ -864,7 +875,7 @@ function CalendarView({ locale, data }: { locale: Locale; data: DiscoveryData })
           <div>
             <span>{copy.schedule}</span>
             <h2>
-              {new Intl.DateTimeFormat(locale, {
+              {getCachedDiscoveryFormatter(locale, {
                 weekday: "long",
                 month: "long",
                 day: "numeric",

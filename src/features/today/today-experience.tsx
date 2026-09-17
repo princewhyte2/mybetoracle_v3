@@ -673,7 +673,11 @@ export function TodayExperience({ data, locale, scope = "today", heading, initia
       setFeed((current) => ({ ...current, competitions: current.competitions.map((competition) => ({ ...competition, matches: competition.matches.map(apply) })) }));
       setSelectedMatch((current) => current ? apply(current) : null);
     } catch {} };
-    source.addEventListener("fixture_update", update as EventListener); return () => source.close();
+    source.addEventListener("fixture_update", update as EventListener);
+    return () => {
+      source.removeEventListener("fixture_update", update as EventListener);
+      source.close();
+    };
   }, [feed.dateIso]);
 
   const selectedDate = useMemo(() => new Date(feed.dateIso), [feed.dateIso]);
