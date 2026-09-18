@@ -660,12 +660,6 @@
   color: var(--muted-strong);
 }
 
-/* Hide ads on the match details page on mobile devices */
-@media (max-width: 900px) {
-  .desktopOnlyAd {
-    display: none !important;
-  }
-}
 
 .mobileStickyActionPill {
   position: fixed;

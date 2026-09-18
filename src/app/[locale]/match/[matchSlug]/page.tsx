@@ -9,6 +9,8 @@ import { isLocale, locales, type Locale } from "@/i18n/config";
 import { interpolateSystem, systemLabels } from "@/i18n/system-labels";
 import { DEFAULT_OG_IMAGE } from "@/i18n/localized-metadata";
 
+import { buildMatchSeo } from "@/features/match/match-seo";
+
 const resolveMatch = cache((slug: string, locale: Locale) => getMatchDetail(slug, locale));
 
 async function resolved(slug: string, locale: Locale) {
@@ -17,18 +19,27 @@ async function resolved(slug: string, locale: Locale) {
 }
 
 export async function generateMetadata({ params }: PageProps<"/[locale]/match/[matchSlug]">): Promise<Metadata> {
-  const { locale, matchSlug } = await params; if (!isLocale(locale)) notFound();
-  const match = await resolved(matchSlug, locale); const copy = systemLabels[locale];
-  const fields = { home: match.home.name, away: match.away.name };
-  const rawTitle = interpolateSystem(copy.matchTitle, fields);
-  const fullTitle = `${rawTitle} | MyBetOracle`;
-  const description = interpolateSystem(copy.matchDescription, fields);
+  const { locale, matchSlug } = await params;
+  if (!isLocale(locale)) notFound();
+
+  let match;
+  try {
+    match = await resolved(matchSlug, locale);
+  } catch {
+    return {
+      title: "Match Details | MyBetOracle",
+      description: "Football match intelligence, predictions, head-to-head records and team streaks.",
+      robots: { index: false, follow: true },
+    };
+  }
+
+  const { rawTitle, fullTitle, description } = buildMatchSeo(match, locale);
   const origin = (process.env.NEXT_PUBLIC_SITE_URL || "https://www.mybetoracle.com").replace(/\/$/, "");
   const canonical = `${origin}${match.canonicalPath}`;
-  const localizedMatches = await Promise.all(locales.map(async (item) => [item, await resolved(matchSlug, item)] as const));
-  const languages: Record<string, string> = Object.fromEntries(localizedMatches.map(([item, localized]) => [item, `${origin}${localized.canonicalPath}`]));
-  const enMatch = localizedMatches.find(([item]) => item === "en")?.[1];
-  if (enMatch) languages["x-default"] = `${origin}${enMatch.canonicalPath}`;
+  const languages: Record<string, string> = Object.fromEntries(
+    locales.map((item) => [item, `${origin}/${item}/match/${match.slug}`])
+  );
+  languages["x-default"] = `${origin}/en/match/${match.slug}`;
 
   const matchImages = [match.home.emblemUrl, match.away.emblemUrl].filter((value): value is string => Boolean(value));
   const ogImages = matchImages.length > 0
@@ -61,22 +72,60 @@ export async function generateMetadata({ params }: PageProps<"/[locale]/match/[m
 }
 
 export default async function MatchPage({ params }: PageProps<"/[locale]/match/[matchSlug]">) {
-  const { locale, matchSlug } = await params; if (!isLocale(locale)) notFound();
-  const match = await resolved(matchSlug, locale); if (matchSlug !== match.slug) permanentRedirect(match.canonicalPath);
-  const origin = process.env.NEXT_PUBLIC_SITE_URL || "https://www.mybetoracle.com";
+  const { locale, matchSlug } = await params;
+  if (!isLocale(locale)) notFound();
+  const match = await resolved(matchSlug, locale);
+  if (matchSlug !== match.slug) permanentRedirect(match.canonicalPath);
+
+  const origin = (process.env.NEXT_PUBLIC_SITE_URL || "https://www.mybetoracle.com").replace(/\/$/, "");
+  const { description } = buildMatchSeo(match, locale);
+  const score = match.score;
+  const hasScore = Boolean(score && (score[0] !== null || score[1] !== null));
+
   const jsonLd = {
-    "@context": "https://schema.org", "@type": "SportsEvent", name: `${match.home.name} vs ${match.away.name}`,
-    startDate: match.kickoffAt, eventStatus: schemaEventStatus(match.statusCode), url: `${origin}${match.canonicalPath}`,
-    homeTeam: { "@type": "SportsTeam", name: match.home.name }, awayTeam: { "@type": "SportsTeam", name: match.away.name },
+    "@context": "https://schema.org",
+    "@type": "SportsEvent",
+    name: score && hasScore
+      ? `${match.home.name} ${score[0]} - ${score[1]} ${match.away.name}`
+      : `${match.home.name} vs ${match.away.name}`,
+    description,
+    sport: "Soccer",
+    startDate: match.kickoffAt,
+    eventStatus: schemaEventStatus(match.statusCode),
+    url: `${origin}${match.canonicalPath}`,
+    homeTeam: {
+      "@type": "SportsTeam",
+      name: match.home.name,
+      ...(score && hasScore ? { score: score[0] } : {}),
+    },
+    awayTeam: {
+      "@type": "SportsTeam",
+      name: match.away.name,
+      ...(score && hasScore ? { score: score[1] } : {}),
+    },
     ...(match.venue ? { location: { "@type": "Place", name: match.venue, address: match.city || undefined } } : {}),
   };
+
   const competitionUrl = match.competition.id
     ? `${origin}/${locale}/competitions/${entitySlug(match.competition.name, match.competition.id)}`
     : undefined;
-  const breadcrumb = { "@context": "https://schema.org", "@type": "BreadcrumbList", itemListElement: [
-    { "@type": "ListItem", position: 1, name: "Today", item: `${origin}/${locale}/today` },
-    { "@type": "ListItem", position: 2, name: match.competition.name, ...(competitionUrl ? { item: competitionUrl } : {}) },
-    { "@type": "ListItem", position: 3, name: `${match.home.name} vs ${match.away.name}`, item: `${origin}${match.canonicalPath}` },
-  ] };
-  return <><script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify([jsonLd, breadcrumb]).replace(/</g, "\\u003c") }} /><MatchExperience match={match} locale={locale} /></>;
+  const breadcrumb = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      { "@type": "ListItem", position: 1, name: "Today", item: `${origin}/${locale}/today` },
+      { "@type": "ListItem", position: 2, name: match.competition.name, ...(competitionUrl ? { item: competitionUrl } : {}) },
+      { "@type": "ListItem", position: 3, name: `${match.home.name} vs ${match.away.name}`, item: `${origin}${match.canonicalPath}` },
+    ],
+  };
+
+  return (
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify([jsonLd, breadcrumb]).replace(/</g, "\\u003c") }}
+      />
+      <MatchExperience match={match} locale={locale} />
+    </>
+  );
 }

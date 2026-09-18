@@ -2,6 +2,7 @@
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 20px;
+  padding: 16px 20px 24px;
 }
 
 .team {
@@ -13,7 +14,7 @@
   justify-content: space-between;
   gap: 12px;
   align-items: center;
-  padding: 12px 0;
+  padding: 4px 0 12px;
   font-size: 14px;
   font-weight: 750;
   color: var(--midnight, #0b1523);
@@ -314,6 +315,8 @@
 @media (max-width: 600px) {
   .teams {
     grid-template-columns: 1fr;
+    padding: 12px 14px 20px;
+    gap: 24px;
   }
   .pitch {
     max-height: 470px;

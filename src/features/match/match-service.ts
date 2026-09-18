@@ -132,7 +132,38 @@ export async function getMatchDetail(slug: string, locale: Locale): Promise<Matc
   const publicId = slug.split("--").at(-1); const baseUrl = process.env.MYBETORACLE_SERVER_BASE_URL?.replace(/\/$/, ""); const serviceKey = process.env.MYBETORACLE_SERVER_SERVICE_KEY;
   if (!publicId || !baseUrl || !serviceKey || serviceKey.length < 32) throw new MatchDetailError("MATCH_CONFIGURATION_ERROR");
   const url = new URL(`${baseUrl}/api/v3/matches/${encodeURIComponent(publicId)}`); url.searchParams.set("locale", locale);
-  let response: Response; try { response = await fetch(url, { cache: "no-store", headers: { Accept: "application/json", "X-MyBetOracle-V3-Key": serviceKey } }); } catch { throw new MatchDetailError("MATCH_UNAVAILABLE"); }
-  if (response.status === 404) throw new MatchDetailError("MATCH_NOT_FOUND"); if (!response.ok) throw new MatchDetailError("MATCH_UNAVAILABLE");
-  try { return parseMatch(await response.json(), locale); } catch (error) { if (error instanceof MatchDetailError) throw error; throw new MatchDetailError("MATCH_INVALID_RESPONSE"); }
+
+  const fetchWithTimeout = async () => {
+    return fetch(url, {
+      cache: "no-store",
+      headers: { Accept: "application/json", "X-MyBetOracle-V3-Key": serviceKey },
+      signal: AbortSignal.timeout(8000),
+    });
+  };
+
+  let response: Response;
+  try {
+    response = await fetchWithTimeout();
+    if (!response.ok && response.status >= 500) {
+      // Single fast retry for transient upstream server cold-starts or socket blips
+      await new Promise((resolve) => setTimeout(resolve, 300));
+      response = await fetchWithTimeout();
+    }
+  } catch {
+    try {
+      await new Promise((resolve) => setTimeout(resolve, 300));
+      response = await fetchWithTimeout();
+    } catch {
+      throw new MatchDetailError("MATCH_UNAVAILABLE");
+    }
+  }
+
+  if (response.status === 404) throw new MatchDetailError("MATCH_NOT_FOUND");
+  if (!response.ok) throw new MatchDetailError("MATCH_UNAVAILABLE");
+  try {
+    return parseMatch(await response.json(), locale);
+  } catch (error) {
+    if (error instanceof MatchDetailError) throw error;
+    throw new MatchDetailError("MATCH_INVALID_RESPONSE");
+  }
 }

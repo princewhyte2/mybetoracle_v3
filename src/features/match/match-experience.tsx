@@ -524,7 +524,7 @@ export function MatchExperience({ match: initialMatch, locale }: { match: MatchD
             {(match.venue || match.referee) && <div className={styles.venueLine}>{match.venue && <span><MapPin size={13} /> {match.venue}{match.city ? `, ${match.city}` : ""}</span>}{match.referee && <span><CircleDot size={13} /> {copy.referee}: {match.referee}</span>}</div>}
           </section>
 
-          <AdSlot format="leaderboard" label={copy.advertisement} className={styles.desktopOnlyAd} />
+          <AdSlot format="leaderboard" label={copy.advertisement} />
 
           <nav className={styles.matchTabs} aria-label={copy.matchSections}>{tabs.map((tab) => <button className={activeTab === tab.id ? styles.tabActive : ""} key={tab.id} onClick={() => setActiveTab(tab.id)}>{tab.label}{tab.id === "oracle" && <span>{match.oracleScore}</span>}</button>)}</nav>
 
@@ -543,7 +543,7 @@ export function MatchExperience({ match: initialMatch, locale }: { match: MatchD
                     onOpen={() => navigate(`streaks?teamId=${encodeURIComponent(match.home.id)}`)}
                   />
                 )}
-                <AdSlot format="in-feed" label={copy.advertisement} className={styles.desktopOnlyAd} />
+                <AdSlot format="in-feed" label={copy.advertisement} />
                 <div className={styles.overviewTeaserGrid}>
                   {visibleSections.h2h && (
                     <button
@@ -618,7 +618,7 @@ export function MatchExperience({ match: initialMatch, locale }: { match: MatchD
             {activeTab === "h2h" && (
               <>
                 <H2HSection match={match} locale={locale} copy={copy} />
-                <AdSlot format="in-feed" label={copy.advertisement} className={styles.desktopOnlyAd} />
+                <AdSlot format="in-feed" label={copy.advertisement} />
                 <RecentResults match={match} locale={locale} copy={copy} />
               </>
             )}
