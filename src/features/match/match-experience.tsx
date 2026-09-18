@@ -34,6 +34,7 @@ import { useEffect, useMemo, useState } from "react";
 import { AdSlot } from "@/components/ads/ad-slot";
 import { MboMark } from "@/components/brand/brand-marks";
 import { MobileProductMenu } from "@/components/navigation/mobile-product-menu";
+import { entitySlug } from "@/features/discovery/public-id";
 import { locales, type Locale } from "@/i18n/config";
 import { getMessages } from "@/i18n/messages";
 import shellStyles from "@/features/today/today-experience.module.css";
@@ -223,11 +224,20 @@ function H2HSection({ match, locale, copy }: { match: MatchDetail; locale: Local
           const isAwayWinner = item.score[1] > item.score[0];
           return (
             <div key={item.id} className={styles.h2hRow}>
-              <time>{formatter.format(new Date(item.date))}</time>
-              <span className={isHomeWinner ? styles.h2hTeamWinner : ""}>{item.home}</span>
-              <strong className={`${styles.h2hScore} ${isHomeWinner ? styles.h2hScoreHomeWin : isAwayWinner ? styles.h2hScoreAwayWin : styles.h2hScoreDraw}`}>{item.score[0]} - {item.score[1]}</strong>
-              <span className={isAwayWinner ? styles.h2hTeamWinner : ""}>{item.away}</span>
-              <small>{item.competition}</small>
+              <div className={styles.h2hRowMeta}>
+                <time>{formatter.format(new Date(item.date))}</time>
+                <small>{item.competition}</small>
+              </div>
+              <div className={styles.h2hMatchup}>
+                <div className={styles.h2hTeamLine}>
+                  <span className={isHomeWinner ? styles.h2hTeamWinner : ""}>{item.home}</span>
+                  <strong className={isHomeWinner ? styles.h2hScoreWin : isAwayWinner ? styles.h2hScoreLose : styles.h2hScoreDraw}>{item.score[0]}</strong>
+                </div>
+                <div className={styles.h2hTeamLine}>
+                  <span className={isAwayWinner ? styles.h2hTeamWinner : ""}>{item.away}</span>
+                  <strong className={isAwayWinner ? styles.h2hScoreWin : isHomeWinner ? styles.h2hScoreLose : styles.h2hScoreDraw}>{item.score[1]}</strong>
+                </div>
+              </div>
             </div>
           );
         })}
@@ -285,7 +295,7 @@ function LineupsSection({ match, copy, locale }: { match: MatchDetail; copy: Mat
 function RecentResults({match,locale,copy}:{match:MatchDetail;locale:Locale;copy:MatchLabels}) {
   const formatter = useMemo(() => new Intl.DateTimeFormat(locale, { day: "2-digit", month: "short" }), [locale]);
   if(!match.recentResults?.home.length && !match.recentResults?.away.length) return null;
-  return <section className={styles.contentSection}><div className={styles.sectionHeading}><h2>{copy.recentForm}</h2><small>{copy.allCompetitions}</small></div>{(["home","away"] as const).filter(side=>match.recentResults?.[side].length).map(side=><div key={side}><h3>{match[side].name}</h3><div className={styles.h2hList}>{match.recentResults?.[side].map(row=><div key={row.id} className={styles.h2hRow}><time>{formatter.format(new Date(row.date))}</time><span>{row.home}</span><strong>{row.score[0]} - {row.score[1]}</strong><span>{row.away}</span><small className={styles[`form${row.result}`]}>{row.result}</small></div>)}</div></div>)}</section>;
+  return <section className={styles.contentSection}><div className={styles.sectionHeading}><h2>{copy.recentForm}</h2><small>{copy.allCompetitions}</small></div>{(["home","away"] as const).filter(side=>match.recentResults?.[side].length).map(side=><div key={side}><h3 className={styles.recentFormTeamHeading}>{match[side].name}</h3><div className={styles.h2hList}>{match.recentResults?.[side].map(row=><div key={row.id} className={styles.h2hRow}><div className={styles.h2hRowMeta}><time>{formatter.format(new Date(row.date))}</time><span className={styles[`form${row.result}`]}>{row.result}</span></div><div className={styles.h2hMatchup}><div className={styles.h2hTeamLine}><span>{row.home}</span><strong className={row.score[0]>row.score[1]?styles.h2hScoreWin:row.score[0]<row.score[1]?styles.h2hScoreLose:styles.h2hScoreDraw}>{row.score[0]}</strong></div><div className={styles.h2hTeamLine}><span>{row.away}</span><strong className={row.score[1]>row.score[0]?styles.h2hScoreWin:row.score[1]<row.score[0]?styles.h2hScoreLose:styles.h2hScoreDraw}>{row.score[1]}</strong></div></div></div>)}</div></div>)}</section>;
 }
 
 function EventBadge({ type, detail }: { type: string; detail: string | null }) {
@@ -504,7 +514,7 @@ export function MatchExperience({ match: initialMatch, locale }: { match: MatchD
             <h1 className={styles.srOnly}>{match.home.name} vs {match.away.name}</h1>
             <div className={styles.competitionLine}><span>{match.competition.countryCode}</span><strong>{match.competition.name}</strong>{match.competition.round && <small>{match.competition.round}</small>}<button className={saved ? styles.saved : ""} onClick={() => setSaved((current) => !current)} aria-label={saved ? copy.removeSaved : copy.saveMatch}><Star size={17} fill={saved ? "currentColor" : "none"} /></button></div>
             <div className={styles.scoreMain}>
-              <button className={`${styles.scoreTeam} ${styles.scoreTeamButton}`} onClick={() => router.push(`/${locale}/teams/${match.home.id}`)}><Crest team={match.home} large /><h2>{match.home.name}</h2><FormStrip team={match.home} copy={copy} /></button>
+              <button className={`${styles.scoreTeam} ${styles.scoreTeamButton}`} onClick={() => router.push(`/${locale}/teams/${entitySlug(match.home.name, match.home.id)}`)}><Crest team={match.home} large /><h2>{match.home.name}</h2><FormStrip team={match.home} copy={copy} /></button>
               <div className={styles.kickoffBlock}>
                 {match.score && match.status !== "scheduled" ? (
                   <>
@@ -519,7 +529,7 @@ export function MatchExperience({ match: initialMatch, locale }: { match: MatchD
                 <span>{dateFormatter.format(kickoff)}</span>
                 <small data-state={match.status}>{match.status === "scheduled" ? copy.scheduled : `${match.statusCode}${match.elapsedMinute !== null ? ` · ${match.elapsedMinute}'` : ""}`}</small>
               </div>
-              <button className={`${styles.scoreTeam} ${styles.scoreTeamButton}`} onClick={() => router.push(`/${locale}/teams/${match.away.id}`)}><Crest team={match.away} large /><h2>{match.away.name}</h2><FormStrip team={match.away} copy={copy} /></button>
+              <button className={`${styles.scoreTeam} ${styles.scoreTeamButton}`} onClick={() => router.push(`/${locale}/teams/${entitySlug(match.away.name, match.away.id)}`)}><Crest team={match.away} large /><h2>{match.away.name}</h2><FormStrip team={match.away} copy={copy} /></button>
             </div>
             {(match.venue || match.referee) && <div className={styles.venueLine}>{match.venue && <span><MapPin size={13} /> {match.venue}{match.city ? `, ${match.city}` : ""}</span>}{match.referee && <span><CircleDot size={13} /> {copy.referee}: {match.referee}</span>}</div>}
           </section>
