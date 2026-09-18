@@ -145,24 +145,34 @@ function StreakSection({ match, onOpen, locale, copy }: { match: MatchDetail; on
 
 function H2HSection({ match, locale, copy }: { match: MatchDetail; locale: Locale; copy: MatchLabels }) {
   const [venueFilter, setVenueFilter] = useState<"overall" | "home" | "away">("overall");
-  if (match.availability.h2h !== "available" || !match.h2h.length) return null;
-  const formatter = new Intl.DateTimeFormat(locale, { day: "2-digit", month: "short", year: "numeric" });
+  const formatter = useMemo(() => new Intl.DateTimeFormat(locale, { day: "2-digit", month: "short", year: "numeric" }), [locale]);
   
-  const filteredMeetings = match.h2h.filter((item) => {
-    if (venueFilter === "home") return item.home === match.home.name;
-    if (venueFilter === "away") return item.away === match.away.name || item.home === match.away.name;
-    return true;
-  });
+  const { filteredMeetings, summary, total, homePct, drawPct, awayPct } = useMemo(() => {
+    const filtered = match.h2h.filter((item) => {
+      if (venueFilter === "home") return item.home === match.home.name;
+      if (venueFilter === "away") return item.away === match.away.name || item.home === match.away.name;
+      return true;
+    });
 
-  const summary = filteredMeetings.reduce((result, item) => {
-    if (item.score[0] === item.score[1]) result.draws += 1;
-    else {
-      const winner = item.score[0] > item.score[1] ? item.home : item.away;
-      if (winner === match.home.name) result.home += 1;
-      if (winner === match.away.name) result.away += 1;
-    }
-    return result;
-  }, { home: 0, draws: 0, away: 0 });
+    const sum = filtered.reduce((result, item) => {
+      if (item.score[0] === item.score[1]) result.draws += 1;
+      else {
+        const winner = item.score[0] > item.score[1] ? item.home : item.away;
+        if (winner === match.home.name) result.home += 1;
+        if (winner === match.away.name) result.away += 1;
+      }
+      return result;
+    }, { home: 0, draws: 0, away: 0 });
+
+    const tot = Math.max(filtered.length, 1);
+    const hp = Math.round((sum.home / tot) * 100);
+    const dp = Math.round((sum.draws / tot) * 100);
+    const ap = Math.max(0, 100 - hp - dp);
+
+    return { filteredMeetings: filtered, summary: sum, total: tot, homePct: hp, drawPct: dp, awayPct: ap };
+  }, [match.h2h, match.home.name, match.away.name, venueFilter]);
+
+  if (match.availability.h2h !== "available" || !match.h2h.length) return null;
 
   return (
     <section className={styles.contentSection}>
@@ -193,40 +203,69 @@ function H2HSection({ match, locale, copy }: { match: MatchDetail; locale: Local
           {match.away.shortName} ({copy.away})
         </button>
       </div>
-      <div className={styles.h2hSummary}>
-        <span><strong>{summary.home}</strong> {match.home.name}</span>
-        <span><strong>{summary.draws}</strong> {copy.draw}</span>
-        <span><strong>{summary.away}</strong> {match.away.name}</span>
+
+      <div className={styles.h2hDistributionWrap}>
+        <div className={styles.h2hBar}>
+          {summary.home > 0 && <div className={styles.h2hBarHome} style={{ width: `${(summary.home / total) * 100}%` }} title={`${match.home.name}: ${summary.home}`} />}
+          {summary.draws > 0 && <div className={styles.h2hBarDraw} style={{ width: `${(summary.draws / total) * 100}%` }} title={`${copy.draw}: ${summary.draws}`} />}
+          {summary.away > 0 && <div className={styles.h2hBarAway} style={{ width: `${(summary.away / total) * 100}%` }} title={`${match.away.name}: ${summary.away}`} />}
+        </div>
+        <div className={styles.h2hBarStats}>
+          <span className={styles.h2hStatHome}><strong>{summary.home}</strong> {match.home.shortName} ({homePct}%)</span>
+          <span className={styles.h2hStatDraw}><strong>{summary.draws}</strong> {copy.draw} ({drawPct}%)</span>
+          <span className={styles.h2hStatAway}><strong>{summary.away}</strong> {match.away.shortName} ({awayPct}%)</span>
+        </div>
       </div>
+
       <div className={styles.h2hList}>
-        {filteredMeetings.map((item) => (
-          <div key={item.id}>
-            <time>{formatter.format(new Date(item.date))}</time>
-            <span>{item.home}</span>
-            <strong>{item.score[0]} - {item.score[1]}</strong>
-            <span>{item.away}</span>
-            <small>{item.competition}</small>
-          </div>
-        ))}
+        {filteredMeetings.map((item) => {
+          const isHomeWinner = item.score[0] > item.score[1];
+          const isAwayWinner = item.score[1] > item.score[0];
+          return (
+            <div key={item.id} className={styles.h2hRow}>
+              <time>{formatter.format(new Date(item.date))}</time>
+              <span className={isHomeWinner ? styles.h2hTeamWinner : ""}>{item.home}</span>
+              <strong className={`${styles.h2hScore} ${isHomeWinner ? styles.h2hScoreHomeWin : isAwayWinner ? styles.h2hScoreAwayWin : styles.h2hScoreDraw}`}>{item.score[0]} - {item.score[1]}</strong>
+              <span className={isAwayWinner ? styles.h2hTeamWinner : ""}>{item.away}</span>
+              <small>{item.competition}</small>
+            </div>
+          );
+        })}
       </div>
     </section>
   );
 }
 
 function StatsSection({ match, locale, copy }: { match: MatchDetail; locale: Locale; copy: MatchLabels }) {
-  const [period,setPeriod]=useState("MATCH");
-  const periods=[...new Set(match.comparison.map(item=>item.period ?? "MATCH"))];
-  const selected=periods.includes(period)?period:periods[0];
+  const [period, setPeriod] = useState("MATCH");
+  const periods = useMemo(() => [...new Set(match.comparison.map(item => item.period ?? "MATCH"))], [match.comparison]);
+  const selected = periods.includes(period) ? period : (periods[0] ?? "MATCH");
+  const filteredComparison = useMemo(() => match.comparison.filter(item => (item.period ?? "MATCH") === selected), [match.comparison, selected]);
+
   if (match.availability.statistics !== "available" || !match.comparison.length) return null;
   return (
     <section className={styles.contentSection}>
-      <div className={styles.sectionHeading}><h2>{copy.statistics}</h2>{periods.length>1 && <select value={selected} onChange={event=>setPeriod(event.target.value)} aria-label={copy.statistics}>{periods.map(value=><option key={value} value={value}>{value==="MATCH"?copy.match:value}</option>)}</select>}</div>
+      <div className={styles.sectionHeading}><h2>{copy.statistics}</h2>{periods.length > 1 && <select value={selected} onChange={event => setPeriod(event.target.value)} aria-label={copy.statistics}>{periods.map(value => <option key={value} value={value}>{value === "MATCH" ? copy.match : value}</option>)}</select>}</div>
       <div className={styles.statsHeader}><span>{match.home.shortName}</span><span>{match.away.shortName}</span></div>
       <div className={styles.statRows}>
-        {match.comparison.filter(item=>(item.period ?? "MATCH")===selected).map((item) => {
+        {filteredComparison.map((item) => {
           const total = Math.max(item.home + item.away, 1);
           const format = (value: number) => item.format === "percent" ? `${value}%` : item.format === "decimal" ? value.toFixed(item.label === "Expected goals" ? 2 : 1) : value;
-          return <div key={item.label}><div><strong>{format(item.home)}</strong><span>{statisticLabel(locale,matchStatLabel(locale,item.label))}</span><strong>{format(item.away)}</strong></div><div className={styles.statTrack}><i style={{ width: `${(item.home / total) * 100}%` }} /><b style={{ width: `${(item.away / total) * 100}%` }} /></div></div>;
+          const isHomeDominant = item.home > item.away;
+          const isAwayDominant = item.away > item.home;
+          return (
+            <div key={item.label} className={styles.statRow}>
+              <div className={styles.statRowValues}>
+                <strong className={isHomeDominant ? styles.statLeader : ""}>{format(item.home)}</strong>
+                <span>{statisticLabel(locale, matchStatLabel(locale, item.label))}</span>
+                <strong className={isAwayDominant ? styles.statLeader : ""}>{format(item.away)}</strong>
+              </div>
+              <div className={styles.statTrack}>
+                <i style={{ width: `${(item.home / total) * 100}%` }} className={isHomeDominant ? styles.statTrackLeader : ""} />
+                <b style={{ width: `${(item.away / total) * 100}%` }} className={isAwayDominant ? styles.statTrackLeader : ""} />
+              </div>
+            </div>
+          );
         })}
       </div>
     </section>
@@ -238,29 +277,139 @@ function LineupsSection({ match, copy, locale }: { match: MatchDetail; copy: Mat
   return (
     <section className={styles.contentSection}>
       <div className={styles.sectionHeading}><h2>{copy.lineups}</h2></div>
-<LineupPitch match={match} locale={locale} />
+      <LineupPitch match={match} locale={locale} />
     </section>
   );
 }
 
 function RecentResults({match,locale,copy}:{match:MatchDetail;locale:Locale;copy:MatchLabels}) {
-  const formatter=new Intl.DateTimeFormat(locale,{day:"2-digit",month:"short"});
+  const formatter = useMemo(() => new Intl.DateTimeFormat(locale, { day: "2-digit", month: "short" }), [locale]);
   if(!match.recentResults?.home.length && !match.recentResults?.away.length) return null;
-  return <section className={styles.contentSection}><div className={styles.sectionHeading}><h2>{copy.recentForm}</h2><small>{copy.allCompetitions}</small></div>{(["home","away"] as const).filter(side=>match.recentResults?.[side].length).map(side=><div key={side}><h3>{match[side].name}</h3><div className={styles.h2hList}>{match.recentResults?.[side].map(row=><div key={row.id}><time>{formatter.format(new Date(row.date))}</time><span>{row.home}</span><strong>{row.score[0]} - {row.score[1]}</strong><span>{row.away}</span><small className={styles[`form${row.result}`]}>{row.result}</small></div>)}</div></div>)}</section>;
+  return <section className={styles.contentSection}><div className={styles.sectionHeading}><h2>{copy.recentForm}</h2><small>{copy.allCompetitions}</small></div>{(["home","away"] as const).filter(side=>match.recentResults?.[side].length).map(side=><div key={side}><h3>{match[side].name}</h3><div className={styles.h2hList}>{match.recentResults?.[side].map(row=><div key={row.id} className={styles.h2hRow}><time>{formatter.format(new Date(row.date))}</time><span>{row.home}</span><strong>{row.score[0]} - {row.score[1]}</strong><span>{row.away}</span><small className={styles[`form${row.result}`]}>{row.result}</small></div>)}</div></div>)}</section>;
 }
 
-const eventTypeLabels: Record<Locale, Record<string, string>> = {
-  en: { GOAL: "Goal", CARD: "Card", SUBSTITUTION: "Substitution", VAR: "VAR", OTHER: "Match event" },
-  fr: { GOAL: "But", CARD: "Carton", SUBSTITUTION: "Remplacement", VAR: "VAR", OTHER: "Événement" },
-  es: { GOAL: "Gol", CARD: "Tarjeta", SUBSTITUTION: "Sustitución", VAR: "VAR", OTHER: "Evento" },
-  de: { GOAL: "Tor", CARD: "Karte", SUBSTITUTION: "Wechsel", VAR: "VAR", OTHER: "Spielereignis" },
-  it: { GOAL: "Gol", CARD: "Cartellino", SUBSTITUTION: "Sostituzione", VAR: "VAR", OTHER: "Evento" },
-  pt: { GOAL: "Golo", CARD: "Cartão", SUBSTITUTION: "Substituição", VAR: "VAR", OTHER: "Evento" },
-};
+function EventBadge({ type, detail }: { type: string; detail: string | null }) {
+  const d = detail?.toLowerCase() ?? "";
+  if (type === "GOAL") {
+    const isPen = d.includes("penalty");
+    const isOwn = d.includes("own");
+    return (
+      <span className={`${styles.eventBadge} ${styles.eventBadgeGoal}`} title={detail ?? "Goal"}>
+        ⚽{isPen ? <small>P</small> : isOwn ? <small>OG</small> : null}
+      </span>
+    );
+  }
+  if (type === "CARD") {
+    const isRed = d.includes("red") || d.includes("second yellow");
+    return (
+      <span className={`${styles.eventBadge} ${isRed ? styles.eventBadgeRedCard : styles.eventBadgeYellowCard}`} title={detail ?? "Card"} />
+    );
+  }
+  if (type === "SUBSTITUTION") {
+    return <span className={`${styles.eventBadge} ${styles.eventBadgeSub}`} title={detail ?? "Substitution"}>🔁</span>;
+  }
+  if (type === "VAR") {
+    return <span className={`${styles.eventBadge} ${styles.eventBadgeVar}`} title={detail ?? "VAR"}>🖥️</span>;
+  }
+  return <span className={`${styles.eventBadge} ${styles.eventBadgeOther}`}>•</span>;
+}
 
 function TimelineSection({ match, locale, copy }: { match: MatchDetail; locale: Locale; copy: MatchLabels }) {
   if (!match.events.length) return null;
-  return <section className={styles.contentSection}><div className={styles.sectionHeading}><div><span>{copy.overview}</span><h2>{copy.match}</h2></div></div><ol className={styles.timeline}>{match.events.map((event) => <li key={event.id}><time>{event.minute ?? "—"}{event.extra ? `+${event.extra}` : ""}&apos;</time><strong>{eventTypeLabels[locale][event.type] ?? eventTypeLabels[locale].OTHER}</strong><span>{event.player ?? (event.teamId === match.home.id ? match.home.name : event.teamId === match.away.id ? match.away.name : "")}{event.assist ? ` · ${event.assist}` : ""}</span></li>)}</ol></section>;
+
+  const { firstHalf, secondHalf, extraTime } = useMemo(() => {
+    const sorted = [...match.events].sort((a, b) => {
+      const minA = (a.minute ?? 0) * 100 + (a.extra ?? 0);
+      const minB = (b.minute ?? 0) * 100 + (b.extra ?? 0);
+      return minA - minB;
+    });
+    const fh: typeof sorted = [];
+    const sh: typeof sorted = [];
+    const et: typeof sorted = [];
+    for (const ev of sorted) {
+      const m = ev.minute ?? 0;
+      if (m <= 45) fh.push(ev);
+      else if (m <= 90) sh.push(ev);
+      else et.push(ev);
+    }
+    return { firstHalf: fh, secondHalf: sh, extraTime: et };
+  }, [match.events]);
+
+  const renderEvent = (event: MatchDetail["events"][number]) => {
+    let isHome = event.teamId === match.home.id;
+    let isAway = event.teamId === match.away.id;
+    if (!isHome && !isAway && event.player) {
+      const norm = event.player.toLowerCase().trim();
+      if (match.lineup.home.some(name => name.toLowerCase().trim().includes(norm) || norm.includes(name.toLowerCase().trim()))) {
+        isHome = true;
+      } else if (match.lineup.away.some(name => name.toLowerCase().trim().includes(norm) || norm.includes(name.toLowerCase().trim()))) {
+        isAway = true;
+      } else {
+        isHome = true;
+      }
+    }
+    const minuteStr = `${event.minute ?? "—"}${event.extra ? `+${event.extra}` : ""}'`;
+
+    return (
+      <div key={event.id} className={styles.timelineRow}>
+        <div className={`${styles.timelineSide} ${styles.timelineSideHome}`}>
+          {isHome && (
+            <div className={styles.timelineCard}>
+              <div className={styles.timelineCardBody}>
+                <strong>{event.player ?? match.home.name}</strong>
+                {event.assist && <small className={styles.timelineSubText}>({event.assist})</small>}
+                {event.detail && !event.assist && <small className={styles.timelineSubText}>{event.detail}</small>}
+              </div>
+              <EventBadge type={event.type} detail={event.detail} />
+            </div>
+          )}
+        </div>
+        <div className={styles.timelineSpine}>
+          <span className={styles.timelineMinuteBadge}>{minuteStr}</span>
+        </div>
+        <div className={`${styles.timelineSide} ${styles.timelineSideAway}`}>
+          {isAway && (
+            <div className={styles.timelineCard}>
+              <EventBadge type={event.type} detail={event.detail} />
+              <div className={styles.timelineCardBody}>
+                <strong>{event.player ?? match.away.name}</strong>
+                {event.assist && <small className={styles.timelineSubText}>({event.assist})</small>}
+                {event.detail && !event.assist && <small className={styles.timelineSubText}>{event.detail}</small>}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  };
+
+  return (
+    <section className={styles.contentSection}>
+      <div className={styles.sectionHeading}>
+        <div><span>{copy.overview}</span><h2>{copy.match}</h2></div>
+      </div>
+      <div className={styles.timelineContainer}>
+        {firstHalf.length > 0 && (
+          <div className={styles.timelinePeriod}>
+            <div className={styles.timelinePeriodDivider}><span>{copy.firstHalf}</span></div>
+            {firstHalf.map(renderEvent)}
+          </div>
+        )}
+        {secondHalf.length > 0 && (
+          <div className={styles.timelinePeriod}>
+            <div className={styles.timelinePeriodDivider}><span>{copy.secondHalf}</span></div>
+            {secondHalf.map(renderEvent)}
+          </div>
+        )}
+        {extraTime.length > 0 && (
+          <div className={styles.timelinePeriod}>
+            <div className={styles.timelinePeriodDivider}><span>Extra Time</span></div>
+            {extraTime.map(renderEvent)}
+          </div>
+        )}
+      </div>
+    </section>
+  );
 }
 
 export function MatchExperience({ match: initialMatch, locale }: { match: MatchDetail; locale: Locale }) {
@@ -356,7 +505,20 @@ export function MatchExperience({ match: initialMatch, locale }: { match: MatchD
             <div className={styles.competitionLine}><span>{match.competition.countryCode}</span><strong>{match.competition.name}</strong>{match.competition.round && <small>{match.competition.round}</small>}<button className={saved ? styles.saved : ""} onClick={() => setSaved((current) => !current)} aria-label={saved ? copy.removeSaved : copy.saveMatch}><Star size={17} fill={saved ? "currentColor" : "none"} /></button></div>
             <div className={styles.scoreMain}>
               <button className={`${styles.scoreTeam} ${styles.scoreTeamButton}`} onClick={() => router.push(`/${locale}/teams/${match.home.id}`)}><Crest team={match.home} large /><h2>{match.home.name}</h2><FormStrip team={match.home} copy={copy} /></button>
-              <div className={styles.kickoffBlock}>{match.score && match.status !== "scheduled" ? <time>{match.score[0] ?? "—"} - {match.score[1] ?? "—"}</time> : <time>{timeFormatter.format(kickoff)}</time>}<span>{dateFormatter.format(kickoff)}</span><small data-state={match.status}>{match.status === "scheduled" ? copy.scheduled : `${match.statusCode}${match.elapsedMinute !== null ? ` · ${match.elapsedMinute}'` : ""}`}</small></div>
+              <div className={styles.kickoffBlock}>
+                {match.score && match.status !== "scheduled" ? (
+                  <>
+                    <time>{match.score[0] ?? "—"} - {match.score[1] ?? "—"}</time>
+                    {match.halfTimeScore && (match.halfTimeScore[0] !== null || match.halfTimeScore[1] !== null) && (
+                      <span className={styles.halfTimeScore}>({copy.halfTime} {match.halfTimeScore[0] ?? 0} - {match.halfTimeScore[1] ?? 0})</span>
+                    )}
+                  </>
+                ) : (
+                  <time>{timeFormatter.format(kickoff)}</time>
+                )}
+                <span>{dateFormatter.format(kickoff)}</span>
+                <small data-state={match.status}>{match.status === "scheduled" ? copy.scheduled : `${match.statusCode}${match.elapsedMinute !== null ? ` · ${match.elapsedMinute}'` : ""}`}</small>
+              </div>
               <button className={`${styles.scoreTeam} ${styles.scoreTeamButton}`} onClick={() => router.push(`/${locale}/teams/${match.away.id}`)}><Crest team={match.away} large /><h2>{match.away.name}</h2><FormStrip team={match.away} copy={copy} /></button>
             </div>
             {(match.venue || match.referee) && <div className={styles.venueLine}>{match.venue && <span><MapPin size={13} /> {match.venue}{match.city ? `, ${match.city}` : ""}</span>}{match.referee && <span><CircleDot size={13} /> {copy.referee}: {match.referee}</span>}</div>}

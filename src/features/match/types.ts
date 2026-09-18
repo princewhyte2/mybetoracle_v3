@@ -18,7 +18,7 @@ export type MatchStreak = {
   category: "Results" | "Goals" | "Corners" | "Cards" | "First Half" | "Second Half";
 };
 
-export type LineupPlayer = { id: string; name: string; number: number | null; grid: string | null; starter: boolean; photoUrl?: string | null };
+export type LineupPlayer = { id: string; name: string; number: number | null; grid: string | null; starter: boolean; photoUrl?: string | null; rating?: number | null };
 export type RecentMatch = { id: string; date: string; home: string; away: string; score: [number, number]; result: "W" | "D" | "L" };
 
 export type MatchDetail = {
@@ -35,6 +35,7 @@ export type MatchDetail = {
   home: MatchDetailTeam;
   away: MatchDetailTeam;
   score?: [number | null, number | null];
+  halfTimeScore?: [number | null, number | null];
   elapsedMinute: number | null;
   oracleScore: number;
   oracleMarket: OracleMarket;

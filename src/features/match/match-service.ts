@@ -56,24 +56,7 @@ export function parseMatch(payload: unknown, locale: Locale): MatchDetail {
   };
   const recentHome=recentFor(text(home.id) ?? ""), recentAway=recentFor(text(away.id) ?? "");
   const score = object(fixture.score); const homeScore = number(score?.home); const awayScore = number(score?.away);
-  const lineups = items(root.lineups).map(object).filter((item): item is UnknownRecord => Boolean(item));
-  const homeLineup = lineups.find((item) => text(item.teamId) === text(home.id));
-  const awayLineup = lineups.find((item) => text(item.teamId) === text(away.id));
-  const lineupPlayers = (lineup: UnknownRecord | undefined): LineupPlayer[] => Array.isArray(lineup?.players) ? lineup.players.flatMap((entry) => {
-    const player = object(entry); const name = text(player?.displayName); const id=text(player?.id);
-    const photo = text(player?.photoUrl);
-    const photoUrl = photo && /^https:\/\/media\.api-sports\.io\/football\/players\/[1-9]\d{0,14}\.png$/.test(photo) ? photo : null;
-    return name && id ? [{id,name,number:number(player?.number),grid:text(player?.grid),starter:player?.isStarter===true,photoUrl}] : [];
-  }) : [];
-  const statistics = items(root.statistics).map(object).filter((item): item is UnknownRecord => Boolean(item));
-  const metricNames = [...new Set(statistics.flatMap((item) => text(item.metric) ? [`${text(item.period) ?? "MATCH"}:${text(item.metric)!}`] : []))];
-  const comparison = metricNames.flatMap((key): MatchDetail["comparison"] => {
-    const [period,metric]=key.split(":");
-    const homeValue = statistics.find((item) => text(item.metric) === metric && (text(item.period) ?? "MATCH") === period && text(item.teamId) === text(home.id));
-    const awayValue = statistics.find((item) => text(item.metric) === metric && (text(item.period) ?? "MATCH") === period && text(item.teamId) === text(away.id));
-    const h = number(homeValue?.value); const a = number(awayValue?.value);
-    return h !== null && a !== null ? [{ period, label: metric.replaceAll("_", " "), home: h, away: a, format: text(homeValue?.displayValue)?.includes("%") || text(awayValue?.displayValue)?.includes("%") ? "percent" : !Number.isInteger(h) || !Number.isInteger(a) ? "decimal" : "number" }] : [];
-  });
+  const halfTimeHome = number(score?.halfTimeHome); const halfTimeAway = number(score?.halfTimeAway);
   const playerRows=items(root.playerStatistics).map(object).filter((row):row is UnknownRecord=>Boolean(row));
   const playerStatistics:NonNullable<MatchDetail["playerStatistics"]>=[];
   const playerMap=new Map<string,NonNullable<MatchDetail["playerStatistics"]>[number]>();
@@ -86,6 +69,36 @@ export function parseMatch(payload: unknown, locale: Locale): MatchDetail {
     if(!player){player={id:key,teamId,name,rating:null,minutes:null,goals:null,assists:null};playerMap.set(key,player);playerStatistics.push(player);}
     player[metric]=number(row.value);
   }
+  const ratingByName = new Map<string, number>();
+  const ratingById = new Map<string, number>();
+  for(const p of playerStatistics) {
+    if(p.rating !== null && p.rating > 0) {
+      ratingByName.set(p.name.toLowerCase().trim(), p.rating);
+      const pid = p.id.includes(":") ? p.id.split(":")[1] : p.id;
+      if (pid) ratingById.set(pid, p.rating);
+    }
+  }
+  const lineups = items(root.lineups).map(object).filter((item): item is UnknownRecord => Boolean(item));
+  const homeLineup = lineups.find((item) => text(item.teamId) === text(home.id));
+  const awayLineup = lineups.find((item) => text(item.teamId) === text(away.id));
+  const lineupPlayers = (lineup: UnknownRecord | undefined): LineupPlayer[] => Array.isArray(lineup?.players) ? lineup.players.flatMap((entry) => {
+    const player = object(entry); const name = text(player?.displayName); const id=text(player?.id);
+    const photo = text(player?.photoUrl);
+    const photoUrl = photo && /^https:\/\/media\.api-sports\.io\/football\/players\/[1-9]\d{0,14}\.png$/.test(photo) ? photo : null;
+    const pid = id ?? text(player?.providerPlayerId);
+    const directRating = number(player?.rating);
+    const rating = directRating ?? (pid ? ratingById.get(pid) : null) ?? (name ? ratingByName.get(name.toLowerCase().trim()) ?? null : null);
+    return name && id ? [{id,name,number:number(player?.number),grid:text(player?.grid),starter:player?.isStarter===true,photoUrl,rating}] : [];
+  }) : [];
+  const statistics = items(root.statistics).map(object).filter((item): item is UnknownRecord => Boolean(item));
+  const metricNames = [...new Set(statistics.flatMap((item) => text(item.metric) ? [`${text(item.period) ?? "MATCH"}:${text(item.metric)!}`] : []))];
+  const comparison = metricNames.flatMap((key): MatchDetail["comparison"] => {
+    const [period,metric]=key.split(":");
+    const homeValue = statistics.find((item) => text(item.metric) === metric && (text(item.period) ?? "MATCH") === period && text(item.teamId) === text(home.id));
+    const awayValue = statistics.find((item) => text(item.metric) === metric && (text(item.period) ?? "MATCH") === period && text(item.teamId) === text(away.id));
+    const h = number(homeValue?.value); const a = number(awayValue?.value);
+    return h !== null && a !== null ? [{ period, label: metric.replaceAll("_", " "), home: h, away: a, format: text(homeValue?.displayValue)?.includes("%") || text(awayValue?.displayValue)?.includes("%") ? "percent" : !Number.isInteger(h) || !Number.isInteger(a) ? "decimal" : "number" }] : [];
+  });
   const standingRows = items(root.standings).map(object).filter((item): item is UnknownRecord => Boolean(item));
   const events = items(root.events).flatMap((entry) => {
     const event = object(entry); const id = text(event?.id); if (!id) return [];
@@ -100,6 +113,7 @@ export function parseMatch(payload: unknown, locale: Locale): MatchDetail {
     home: { id: text(home?.id) ?? "", name: homeName, shortName: text(home?.shortName) ?? shortName(homeName), country: "", colors: ["#155EEF", "#D7E8FF"], form: recentHome.map(row=>row.result), emblemUrl: text(home?.emblemUrl) },
     away: { id: text(away?.id) ?? "", name: awayName, shortName: text(away?.shortName) ?? shortName(awayName), country: "", colors: ["#083F87", "#D7E8FF"], form: recentAway.map(row=>row.result), emblemUrl: text(away?.emblemUrl) },
     score: homeScore !== null || awayScore !== null ? [homeScore, awayScore] : undefined,
+    halfTimeScore: halfTimeHome !== null || halfTimeAway !== null ? [halfTimeHome, halfTimeAway] : undefined,
     elapsedMinute: number(fixture.elapsedMinute),
     oracleScore: oracle.confidence, oracleMarket: oracle, predictions, evidence: streaks.slice(0, 3).map((streak) => `${streak.shortLabel} · ${streak.currentLength}`), streaks, h2h,
     events, comparison, playerStatistics, recentResults: {home:recentHome,away:recentAway},
