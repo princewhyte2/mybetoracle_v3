@@ -49,7 +49,6 @@ export const metadata: Metadata = {
     description: "Verified football intelligence, prediction markets, streak evidence and performance tracking.",
     images: ["https://res.cloudinary.com/codewithwhyte/image/upload/c_crop,w_1200,h_630/v1692965057/oracle.png"],
   },
-  manifest: "/manifest.json",
   icons: {
     icon: "/favicon.ico",
     apple: "/icons/maskable_icon_x192.png",
