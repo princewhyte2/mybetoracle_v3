@@ -37,14 +37,23 @@ interface AdSlotProps {
   readonly label?: string;
 }
 
+const INLINE_STYLE_BY_FORMAT: Record<AdSlotFormat, React.CSSProperties> = {
+  leaderboard: { display: "block" },
+  rectangle: { display: "inline-block", width: "300px", height: "250px" },
+  "half-page": { display: "inline-block", width: "300px", height: "600px" },
+  "in-feed": { display: "block" },
+  "mobile-anchor": { display: "inline-block", width: "320px", height: "50px" },
+};
+
 export function AdSlot({ format, slotId, className, label = "Advertisement" }: AdSlotProps) {
   const adRef = useRef<HTMLModElement>(null);
   const pushedRef = useRef(false);
   const clientId = process.env.NEXT_PUBLIC_ADSENSE_CLIENT_ID || "ca-pub-8194555862221451";
   const effectiveSlotId = slotId || DEFAULT_SLOT_BY_FORMAT[format];
+  const isDev = process.env.NODE_ENV !== "production" && process.env.NEXT_PUBLIC_FORCE_ADS !== "true";
 
   useEffect(() => {
-    if (!clientId || !effectiveSlotId || pushedRef.current) return;
+    if (isDev || !clientId || !effectiveSlotId || pushedRef.current) return;
     try {
       ensureAdSenseScript(clientId);
       if (typeof window !== "undefined") {
@@ -54,7 +63,7 @@ export function AdSlot({ format, slotId, className, label = "Advertisement" }: A
     } catch {
       // Graceful fallback if ad blocker is present or ad script is blocked
     }
-  }, [clientId, effectiveSlotId]);
+  }, [clientId, effectiveSlotId, isDev]);
 
   const formatClass =
     format === "leaderboard"
@@ -67,6 +76,15 @@ export function AdSlot({ format, slotId, className, label = "Advertisement" }: A
             ? styles.mobileAnchor
             : styles.inFeed;
 
+  const adFormatAttr =
+    format === "leaderboard" || format === "in-feed"
+      ? "auto"
+      : format === "rectangle"
+        ? "rectangle"
+        : format === "half-page"
+          ? "vertical"
+          : undefined;
+
   return (
     <aside
       className={`${styles.adWrapper} ${formatClass} ${className ?? ""}`}
@@ -74,14 +92,28 @@ export function AdSlot({ format, slotId, className, label = "Advertisement" }: A
     >
       <span className={styles.adBadge}>{label}</span>
       <div className={styles.adInner}>
-        {clientId && effectiveSlotId ? (
+        {isDev ? (
+          <div className={styles.adPlaceholder}>
+            <span className={styles.adPlaceholderText}>
+              <strong>Ad Banner (Dev Preview)</strong>
+              <br />
+              {format === "leaderboard" && "Leaderboard (728 × 90)"}
+              {format === "rectangle" && "Medium Rectangle (300 × 250)"}
+              {format === "half-page" && "Skyscraper / Half-Page (300 × 600)"}
+              {format === "mobile-anchor" && "Mobile Anchor (320 × 50)"}
+              {format === "in-feed" && "Native In-Feed Banner"}
+              <br />
+              <small>Slot: {effectiveSlotId}</small>
+            </span>
+          </div>
+        ) : clientId && effectiveSlotId ? (
           <ins
             ref={adRef}
             className="adsbygoogle"
-            style={{ display: "block" }}
+            style={INLINE_STYLE_BY_FORMAT[format]}
             data-ad-client={clientId}
             data-ad-slot={effectiveSlotId}
-            data-ad-format={format === "leaderboard" || format === "in-feed" ? "auto" : undefined}
+            data-ad-format={adFormatAttr}
             data-full-width-responsive={format === "leaderboard" || format === "in-feed" ? "true" : "false"}
           />
         ) : (
