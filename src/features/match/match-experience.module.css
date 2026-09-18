@@ -153,7 +153,7 @@
 .kickoffBlock small[data-state="finished"] { background: var(--canvas); color: var(--muted-strong); }
 
 .formStrip { display: flex; gap: 4px; }
-.formStrip span { display: grid; width: 22px; height: 22px; place-items: center; border-radius: 4px; color: var(--white); font-size: 10px; font-weight: 850; }
+.formBadge { display: grid; width: 22px; height: 22px; flex: none; place-items: center; border-radius: 4px; color: var(--white); font-size: 10px; font-weight: 850; }
 .formW { background: #16794a; }
 .formD { background: #64748b; }
 .formL { background: #dc2626; }

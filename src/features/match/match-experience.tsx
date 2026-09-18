@@ -94,7 +94,7 @@ function FormStrip({ team, copy }: { team: MatchDetailTeam; copy: MatchLabels })
   if (!team.form.length) return null;
   return (
     <div className={styles.formStrip} aria-label={`${team.name} ${copy.recentForm}`}>
-      {team.form.map((result, index) => <span className={styles[`form${result}`]} key={`${result}-${index}`}>{result}</span>)}
+      {team.form.map((result, index) => <span className={`${styles.formBadge} ${styles[`form${result}`]}`} key={`${result}-${index}`}>{result}</span>)}
     </div>
   );
 }
@@ -295,7 +295,7 @@ function LineupsSection({ match, copy, locale }: { match: MatchDetail; copy: Mat
 function RecentResults({match,locale,copy}:{match:MatchDetail;locale:Locale;copy:MatchLabels}) {
   const formatter = useMemo(() => new Intl.DateTimeFormat(locale, { day: "2-digit", month: "short" }), [locale]);
   if(!match.recentResults?.home.length && !match.recentResults?.away.length) return null;
-  return <section className={styles.contentSection}><div className={styles.sectionHeading}><h2>{copy.recentForm}</h2><small>{copy.allCompetitions}</small></div>{(["home","away"] as const).filter(side=>match.recentResults?.[side].length).map(side=><div key={side}><h3 className={styles.recentFormTeamHeading}>{match[side].name}</h3><div className={styles.h2hList}>{match.recentResults?.[side].map(row=><div key={row.id} className={styles.h2hRow}><div className={styles.h2hRowMeta}><time>{formatter.format(new Date(row.date))}</time><span className={styles[`form${row.result}`]}>{row.result}</span></div><div className={styles.h2hMatchup}><div className={styles.h2hTeamLine}><span>{row.home}</span><strong className={row.score[0]>row.score[1]?styles.h2hScoreWin:row.score[0]<row.score[1]?styles.h2hScoreLose:styles.h2hScoreDraw}>{row.score[0]}</strong></div><div className={styles.h2hTeamLine}><span>{row.away}</span><strong className={row.score[1]>row.score[0]?styles.h2hScoreWin:row.score[1]<row.score[0]?styles.h2hScoreLose:styles.h2hScoreDraw}>{row.score[1]}</strong></div></div></div>)}</div></div>)}</section>;
+  return <section className={styles.contentSection}><div className={styles.sectionHeading}><h2>{copy.recentForm}</h2><small>{copy.allCompetitions}</small></div>{(["home","away"] as const).filter(side=>match.recentResults?.[side].length).map(side=><div key={side}><h3 className={styles.recentFormTeamHeading}>{match[side].name}</h3><div className={styles.h2hList}>{match.recentResults?.[side].map(row=><div key={row.id} className={styles.h2hRow}><div className={styles.h2hRowMeta}><time>{formatter.format(new Date(row.date))}</time><span className={`${styles.formBadge} ${styles[`form${row.result}`]}`}>{row.result}</span></div><div className={styles.h2hMatchup}><div className={styles.h2hTeamLine}><span>{row.home}</span><strong className={row.score[0]>row.score[1]?styles.h2hScoreWin:row.score[0]<row.score[1]?styles.h2hScoreLose:styles.h2hScoreDraw}>{row.score[0]}</strong></div><div className={styles.h2hTeamLine}><span>{row.away}</span><strong className={row.score[1]>row.score[0]?styles.h2hScoreWin:row.score[1]<row.score[0]?styles.h2hScoreLose:styles.h2hScoreDraw}>{row.score[1]}</strong></div></div></div>)}</div></div>)}</section>;
 }
 
 function EventBadge({ type, detail }: { type: string; detail: string | null }) {
