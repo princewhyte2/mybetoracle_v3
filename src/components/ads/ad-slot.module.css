@@ -55,21 +55,26 @@
   letter-spacing: 0.02em;
 }
 
-/* 1. Leaderboard: 728x90 (scales to 970x90/250 on desktop, hides on small mobile) */
+/* 1. Leaderboard: 728x90 desktop, responsive banner on mobile */
 .leaderboard {
   width: 100%;
   max-width: 970px;
-  min-height: 106px;
-  padding: 8px 0;
+  min-height: 60px;
+  padding: 6px 0;
 }
 
 .leaderboard .adInner {
-  min-height: 90px;
+  width: 100%;
+  min-height: 50px;
 }
 
-@media (max-width: 768px) {
+@media (min-width: 769px) {
   .leaderboard {
-    display: none;
+    min-height: 106px;
+    padding: 8px 0;
+  }
+  .leaderboard .adInner {
+    min-height: 90px;
   }
 }
 
@@ -121,28 +126,9 @@
   min-height: 120px;
 }
 
-/* 5. Mobile Anchor Banner: 320x50 */
+/* 5. Mobile Anchor Banner (disabled - sticky overlays conflict with bottom nav) */
 .mobileAnchor {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  z-index: 99;
-  background: var(--midnight, #07111f);
-  border-top: 1px solid rgb(255 255 255 / 12%);
-  min-height: 64px;
-  padding: 4px 0;
-}
-
-.mobileAnchor .adInner {
-  width: 320px;
-  height: 50px;
-}
-
-@media (min-width: 769px) {
-  .mobileAnchor {
-    display: none;
-  }
+  display: none !important;
 }
 
 /* Gracefully hide the entire ad container if AdSense reports the ad as unfilled */

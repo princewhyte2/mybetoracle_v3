@@ -1495,8 +1495,6 @@ export function TodayExperience({ data, locale, scope = "today", heading, initia
         </button>
       )}
 
-      <AdSlot format="mobile-anchor" label={copy.advertisement} />
-
       <nav className={styles.mobileBottomNav} aria-label={common.mobileNavigation}>
         {navItems.slice(0, 5).map(({ label, icon: Icon, active, route }) => (
           <button key={label} className={active ? styles.mobileNavActive : ""} onClick={() => navigate(route)}>

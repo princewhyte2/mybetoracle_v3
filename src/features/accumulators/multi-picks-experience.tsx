@@ -871,10 +871,6 @@ export function MultiPicksExperience({ daily, weekly, locale }: { daily: Accumul
         </aside>
       </div>
 
-      <div className={styles.mobileAnchorWrapper}>
-        <AdSlot format="mobile-anchor" label={labels.advertisement} />
-      </div>
-
       <nav className={shellStyles.mobileBottomNav} aria-label={common.mobileNavigation}>
         {navItems.slice(0, 5).map(({ key, icon: Icon, route }) => (
           <button key={key} className={key === "accas" ? shellStyles.mobileNavActive : ""} onClick={() => navigate(route)}>
