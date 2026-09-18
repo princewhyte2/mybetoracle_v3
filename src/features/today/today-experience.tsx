@@ -499,7 +499,15 @@ function CompetitionBlock({
             real semantic heading without losing the interactive control. */}
         <h2 className={styles.competitionHeadingReset}>
           <button className={styles.competitionIdentity} onClick={onToggle} aria-expanded={!collapsed}>
-            <span className={styles.countryCode}>{competition.countryFlagUrl ? <Image src={competition.countryFlagUrl} alt="" width={22} height={16} /> : competition.countryCode}</span>
+            <span className={styles.countryCode}>
+              {competition.countryFlagUrl ? (
+                <Image src={competition.countryFlagUrl} alt="" width={22} height={16} />
+              ) : competition.countryCode && competition.countryCode !== "INT" ? (
+                competition.countryCode
+              ) : (
+                competition.country ? competition.country.slice(0, 3).toUpperCase() : "INT"
+              )}
+            </span>
             {competition.emblemUrl && <Image className={styles.competitionEmblem} src={competition.emblemUrl} alt="" width={24} height={24} />}
             <strong>{competition.name}</strong>
             <ChevronDown className={collapsed ? styles.chevronCollapsed : ""} size={17} />
@@ -586,12 +594,14 @@ export function TodayExperience({ data, locale, scope = "today", heading, initia
   }, [feed.competitions]);
 
   const countryGroups = useMemo(() => {
-    const map = new Map<string, { country: string; countryCode: string; competitions: Array<{ id: string; name: string; href: string }> }>();
+    const map = new Map<string, { country: string; countryFlagUrl?: string | null; competitions: Array<{ id: string; name: string; href: string }> }>();
     for (const comp of feed.competitions) {
       const key = comp.country || comp.countryCode;
       if (!key) continue;
       if (!map.has(key)) {
-        map.set(key, { country: comp.country, countryCode: comp.countryCode, competitions: [] });
+        map.set(key, { country: comp.country, countryFlagUrl: comp.countryFlagUrl, competitions: [] });
+      } else if (!map.get(key)!.countryFlagUrl && comp.countryFlagUrl) {
+        map.get(key)!.countryFlagUrl = comp.countryFlagUrl;
       }
       try {
         const href = `/${locale}/competitions/${entitySlug(comp.name, comp.id)}`;
@@ -1078,8 +1088,14 @@ export function TodayExperience({ data, locale, scope = "today", heading, initia
                           aria-expanded={isExpanded}
                         >
                           <span className={styles.countryRowLeft}>
-                            <span className={styles.countryCode}>{group.countryCode}</span>
-                            <span>{group.country}</span>
+                            {group.countryFlagUrl ? (
+                              <span className={styles.countryFlagWrap} aria-hidden="true">
+                                <Image src={group.countryFlagUrl} alt="" width={16} height={12} className={styles.countryFlagImg} />
+                              </span>
+                            ) : (
+                              <Globe2 size={14} className={styles.countryFlagFallback} aria-hidden="true" />
+                            )}
+                            <span className={styles.countryName}>{group.country}</span>
                           </span>
                           <ChevronDown size={13} className={isExpanded ? "" : styles.chevronCollapsed} />
                         </button>
