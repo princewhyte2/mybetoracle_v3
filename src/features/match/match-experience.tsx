@@ -513,6 +513,7 @@ export function MatchExperience({ match: initialMatch, locale }: { match: MatchD
           <section className={styles.scoreboard}>
             <h1 className={styles.srOnly}>{match.home.name} vs {match.away.name}</h1>
             <div className={styles.competitionLine}><span>{match.competition.countryCode}</span><strong>{match.competition.name}</strong>{match.competition.round && <small>{match.competition.round}</small>}<button className={saved ? styles.saved : ""} onClick={() => setSaved((current) => !current)} aria-label={saved ? copy.removeSaved : copy.saveMatch}><Star size={17} fill={saved ? "currentColor" : "none"} /></button></div>
+            <div className={styles.matchDateLine}>{dateFormatter.format(kickoff)}</div>
             <div className={styles.scoreMain}>
               <button className={`${styles.scoreTeam} ${styles.scoreTeamButton}`} onClick={() => router.push(`/${locale}/teams/${entitySlug(match.home.name, match.home.id)}`)}><Crest team={match.home} large /><h2>{match.home.name}</h2><FormStrip team={match.home} copy={copy} /></button>
               <div className={styles.kickoffBlock}>
@@ -526,7 +527,6 @@ export function MatchExperience({ match: initialMatch, locale }: { match: MatchD
                 ) : (
                   <time>{timeFormatter.format(kickoff)}</time>
                 )}
-                <span>{dateFormatter.format(kickoff)}</span>
                 <small data-state={match.status}>{match.status === "scheduled" ? copy.scheduled : `${match.statusCode}${match.elapsedMinute !== null ? ` · ${match.elapsedMinute}'` : ""}`}</small>
               </div>
               <button className={`${styles.scoreTeam} ${styles.scoreTeamButton}`} onClick={() => router.push(`/${locale}/teams/${entitySlug(match.away.name, match.away.id)}`)}><Crest team={match.away} large /><h2>{match.away.name}</h2><FormStrip team={match.away} copy={copy} /></button>

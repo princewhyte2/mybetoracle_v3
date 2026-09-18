@@ -110,6 +110,8 @@
 .competitionLine button:hover { background: var(--canvas); }
 .competitionLine .saved { color: var(--action-blue); }
 
+.matchDateLine { padding: 7px 14px; border-bottom: 1px solid var(--border); background: var(--canvas); color: var(--muted-strong); font-size: 12px; font-weight: 650; text-align: center; }
+
 .scoreMain {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 140px minmax(0, 1fr);
@@ -147,7 +149,6 @@
 .kickoffBlock { display: grid; justify-items: center; gap: 4px; text-align: center; }
 .kickoffBlock time { color: var(--midnight); font-family: var(--font-sora), sans-serif; font-size: 34px; font-weight: 800; font-variant-numeric: tabular-nums; white-space: nowrap; line-height: 1.1; }
 .halfTimeScore { font-size: 13px; font-weight: 700; color: #64748b; margin-top: 1px; letter-spacing: 0.02em; }
-.kickoffBlock > span { color: var(--muted-strong); font-size: 12px; font-weight: 650; }
 .kickoffBlock small { padding: 4px 10px; border: 1px solid var(--border-strong); border-radius: 999px; color: var(--heritage-blue); font-size: 11px; font-weight: 800; text-transform: uppercase; }
 .kickoffBlock small[data-state="live"] { border-color: #16794a; background: #ecf8f1; color: #11643d; }
 .kickoffBlock small[data-state="finished"] { background: var(--canvas); color: var(--muted-strong); }
@@ -561,8 +562,8 @@
   .scoreTeam h2 { font-size: 15px; }
   .kickoffBlock time { font-size: 24px; }
   .halfTimeScore { font-size: 11px; }
-  .kickoffBlock > span { font-size: 11px; }
-  .formStrip span { width: 20px; height: 20px; font-size: 10px; }
+  .matchDateLine { padding: 6px 12px; font-size: 11px; }
+  .formBadge { width: 20px; height: 20px; font-size: 10px; }
   .venueLine { display: grid; justify-content: start; min-height: 48px; gap: 4px; padding: 8px 12px; }
   .matchTabs { margin-right: -12px; margin-left: -12px; border-right: 0; border-left: 0; }
   .oracleDecision { grid-template-columns: 48px minmax(0, 1fr); gap: 10px; padding: 14px 12px; }
