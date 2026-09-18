@@ -9,7 +9,7 @@ import { systemLabels } from "@/i18n/system-labels";
 import styles from "../today/page.module.css";
 
 export const dynamicParams = false;
-export const dynamic = "force-dynamic";
+export const revalidate = 300;
 
 export function generateStaticParams() {
   return locales.map((locale) => ({ locale }));

@@ -1,7 +1,7 @@
 import { buildMarketScopeMetadata, buildMarketScopeStaticParams, MarketScopePage } from "@/features/today/market-scope-page";
 
 export const dynamicParams = false;
-export const dynamic = "force-dynamic";
+export const revalidate = 300;
 
 export function generateStaticParams() {
   return buildMarketScopeStaticParams();
