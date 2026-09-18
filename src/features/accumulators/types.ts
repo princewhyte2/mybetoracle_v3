@@ -41,7 +41,7 @@ export type AccumulatorLeg = {
     capturedAt: string;
     mappingVersion: string;
   };
-  settlementEvidence?: string;
+  settlementEvidence?: string | { reason?: string; fixtureStatus?: string; fixtureRevision?: number } | null;
   settledAt?: string;
 };
 

@@ -19,11 +19,13 @@ import {
   History,
   Home,
   Languages,
+  Layers,
   Menu,
   ReceiptText,
   Search,
   ShieldCheck,
   Sparkles,
+  Target,
   Trophy,
   UserCircle,
   WandSparkles,
@@ -188,6 +190,22 @@ function LegCard({
       ? styles.legCardVoid
       : styles.legCardPending;
 
+  const settlementEvidenceText = useMemo(() => {
+    if (!leg.settlementEvidence) return null;
+    if (typeof leg.settlementEvidence === "string") return leg.settlementEvidence;
+    if (typeof leg.settlementEvidence === "object") {
+      const parts: string[] = [];
+      if (leg.settlementEvidence.reason) {
+        parts.push(leg.settlementEvidence.reason.replace(/_/g, " "));
+      }
+      if (leg.settlementEvidence.fixtureStatus) {
+        parts.push(`(${leg.settlementEvidence.fixtureStatus})`);
+      }
+      return parts.join(" ") || null;
+    }
+    return null;
+  }, [leg.settlementEvidence]);
+
   return (
     <>
       {showDate && <div className={styles.legDate}>{formatLegDate(locale, kickoff)}</div>}
@@ -261,12 +279,12 @@ function LegCard({
           </div>
         </Link>
 
-        {/* Card Intelligence: Selection Pill, Tier, Confidence, Odds & Link */}
+        {/* Card Intelligence: Clean Selection Pill, Tier, Tabular Confidence, Decimal Odds & Match Link */}
         <div className={styles.intelligenceBar}>
           <div className={styles.selectionGroup}>
             <span className={styles.selectionTag}>{labels.selection}</span>
             <strong className={styles.selectionPill}>
-              <WandSparkles size={14} className={styles.selectionIcon} aria-hidden="true" />
+              <Target size={13} className={styles.selectionIcon} aria-hidden="true" />
               <span>{leg.selectionLabel}</span>
             </strong>
             <span
@@ -280,35 +298,13 @@ function LegCard({
 
           <div className={styles.evidenceGroup}>
             <div className={styles.confidenceChip} title={labels.confidenceTitle}>
-              <Sparkles size={13} className={styles.confIcon} aria-hidden="true" />
-              <div className={styles.confMeterGroup}>
-                <div className={styles.confHeader}>
-                  <span className={styles.confLabel}>{labels.confidence}</span>
-                  <strong className={styles.confValue}>{leg.prediction.confidenceScore}%</strong>
-                </div>
-                <div className={styles.confMeterTrack} aria-hidden="true">
-                  <div
-                    className={styles.confMeterFill}
-                    style={{
-                      width: `${Math.min(100, Math.max(0, leg.prediction.confidenceScore))}%`,
-                      backgroundColor:
-                        leg.prediction.confidenceScore >= 75
-                          ? "#12b76a"
-                          : leg.prediction.confidenceScore >= 60
-                          ? "#2e90fa"
-                          : "#f79009",
-                    }}
-                  />
-                </div>
-              </div>
+              <span className={styles.confLabel}>{labels.confidence}</span>
+              <strong className={styles.confValue}>{leg.prediction.confidenceScore}%</strong>
             </div>
 
             <div className={styles.oddsChip} title={labels.oddsSnapshot}>
               <span className={styles.oddsLabel}>{labels.odds}</span>
               <strong className={styles.oddsValue}>{leg.decimalOdds.toFixed(2)}</strong>
-              {leg.oddsSnapshot?.bookmaker && (
-                <small className={styles.bookmakerTag}>{leg.oddsSnapshot.bookmaker}</small>
-              )}
             </div>
 
             <Link
@@ -318,16 +314,16 @@ function LegCard({
               aria-label={labels.viewMatchDetails}
             >
               <span>{labels.viewMatchDetails}</span>
-              <ChevronRight size={15} aria-hidden="true" />
+              <ChevronRight size={14} aria-hidden="true" />
             </Link>
           </div>
         </div>
 
         {/* Settlement Evidence if settled */}
-        {leg.settlementEvidence && (
+        {settlementEvidenceText && (
           <div className={styles.settlementEvidence}>
             <ShieldCheck size={13} className={styles.settlementIcon} aria-hidden="true" />
-            <span>{leg.settlementEvidence}</span>
+            <span>{settlementEvidenceText}</span>
           </div>
         )}
       </article>
@@ -782,6 +778,72 @@ export function MultiPicksExperience({ daily, weekly, locale }: { daily: Accumul
               </button>
             </section>
           )}
+
+          {/* Editorial Methodology & Educational SEO Architecture */}
+          <section className={styles.methodologySection} aria-labelledby="methodology-heading">
+            <header className={styles.methodologyHeader}>
+              <h2 id="methodology-heading" className={styles.methodologyTitle}>
+                {labels.methodologyHeading || "Football Intelligence & Multi-Pick Methodology"}
+              </h2>
+              <p className={styles.methodologyIntro}>
+                {labels.methodologyIntro || "Every published Multi-Pick on MyBetOracle represents an algorithmic combination of individual match predictions, filtered through strict probability, expected value, and multi-factor risk mitigation."}
+              </p>
+            </header>
+
+            <div className={styles.methodologyGrid}>
+              <article className={styles.methodologyCard}>
+                <h3>
+                  <ShieldCheck size={14} aria-hidden="true" />
+                  <span>{labels.eligibilityTitle || "Eligibility First"}</span>
+                </h3>
+                <p>{labels.eligibilityText || "Only active MIXED predictions with sufficient data, publication eligibility and confidence of at least 72 can be included."}</p>
+              </article>
+
+              <article className={styles.methodologyCard}>
+                <h3>
+                  <Target size={14} aria-hidden="true" />
+                  <span>{labels.marketsExplainedTitle || "Supported Markets & Structure"}</span>
+                </h3>
+                <p>{labels.marketsExplainedText || "Multi-Picks focus exclusively on high-liquidity football markets: Full-Time Result (1X2), Double Chance (1X, X2, 12), Over/Under Total Goals, Both Teams to Score (BTTS), and Team Totals."}</p>
+              </article>
+
+              <article className={styles.methodologyCard}>
+                <h3>
+                  <CircleCheck size={14} aria-hidden="true" />
+                  <span>{labels.settlementAuditTitle || "Deterministic Settlement"}</span>
+                </h3>
+                <p>{labels.settlementAuditText || "All selections are settled deterministically against official full-time match results immediately upon conclusion. If a fixture is voided, odds adjust multiplicatively."}</p>
+              </article>
+
+              <article className={styles.methodologyCard}>
+                <h3>
+                  <Database size={14} aria-hidden="true" />
+                  <span>{labels.verifiedOddsTitle || "Verified Odds"}</span>
+                </h3>
+                <p>{labels.verifiedOddsText || "Every selection requires exact pre-match recorded odds from the completed Multi-Pick capture run."}</p>
+              </article>
+
+              <article className={styles.methodologyCard}>
+                <h3>
+                  <Layers size={14} aria-hidden="true" />
+                  <span>{labels.optimizationTitle || "Quality Optimization"}</span>
+                </h3>
+                <p>{labels.optimizationText || "Combinations favour stronger average confidence, closeness to the target band and fewer unnecessary selections."}</p>
+              </article>
+
+              <article className={styles.methodologyCard}>
+                <h3>
+                  <Clock3 size={14} aria-hidden="true" />
+                  <span>{labels.immutableTitle || "Immutable Publication"}</span>
+                </h3>
+                <p>{labels.immutableText || "Selection odds and total odds are frozen when published. Later source changes do not alter the Multi-Pick."}</p>
+              </article>
+            </div>
+
+            <footer className={styles.methodologyNotice}>
+              <p>{labels.methodNotice || "Average selection confidence is not the probability that the complete Multi-Pick will win. Options are alternatives, not guarantees."}</p>
+            </footer>
+          </section>
         </main>
 
         <aside className={`${shellStyles.intelligenceRail} ${styles.intelligenceRail}`}>

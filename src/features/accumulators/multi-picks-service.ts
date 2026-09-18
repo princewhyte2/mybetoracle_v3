@@ -54,7 +54,15 @@ export async function getMultiPicksData({ date, locale }: { date: string; locale
   const url = new URL(`${baseUrl}/api/v3/multi-picks`);
   url.searchParams.set("date", date); url.searchParams.set("timezone", "Africa/Lagos"); url.searchParams.set("locale", locale);
   let response: Response;
-  try { response = await fetch(url, { cache: "no-store", headers: { Accept: "application/json", "X-MyBetOracle-V3-Key": serviceKey } }); }
+  try {
+    response = await fetch(url, {
+      next: {
+        revalidate: 120,
+        tags: [`multi-picks-${date}-${locale}`],
+      },
+      headers: { Accept: "application/json", "X-MyBetOracle-V3-Key": serviceKey },
+    });
+  }
   catch { throw new MultiPicksFeedError("MULTI_PICKS_SERVICE_UNAVAILABLE"); }
   if (!response.ok) throw new MultiPicksFeedError(response.status === 400 ? "MULTI_PICKS_INVALID_QUERY" : "MULTI_PICKS_SERVICE_UNAVAILABLE");
   try { const api = parseResponse(await response.json()); return { daily: mapScope(api, "DAILY"), weekly: mapScope(api, "WEEKLY") }; }

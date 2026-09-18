@@ -7,8 +7,7 @@ import { buildMultiPicksJsonLd } from "@/features/accumulators/multi-picks-jsonl
 import { localizedAccumulatorLabels } from "@/features/accumulators/localized-labels";
 import { localizedMetadata } from "@/i18n/localized-metadata";
 
-export const dynamicParams = false;
-export const dynamic = "force-dynamic";
+export const revalidate = 120;
 
 export function generateStaticParams() {
   return locales.map((locale) => ({ locale }));
