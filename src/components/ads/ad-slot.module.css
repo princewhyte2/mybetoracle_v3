@@ -75,30 +75,38 @@
 
 /* 2. Medium Rectangle: 300x250 */
 .rectangle {
-  width: 300px;
+  width: 100%;
+  max-width: 300px;
   min-height: 270px;
-  margin: 8px auto;
+  margin: 0 auto;
+  box-sizing: border-box;
 }
 
 .rectangle .adInner {
-  width: 300px;
+  width: 100%;
+  max-width: 300px;
   height: 250px;
   min-height: 250px;
+  box-sizing: border-box;
 }
 
 /* 3. Half Page / Sticky Skyscraper: 300x600 */
 .halfPage {
-  width: 300px;
+  width: 100%;
+  max-width: 300px;
   min-height: 620px;
-  margin: 12px auto;
+  margin: 0 auto;
   position: sticky;
   top: 84px;
+  box-sizing: border-box;
 }
 
 .halfPage .adInner {
-  width: 300px;
+  width: 100%;
+  max-width: 300px;
   height: 600px;
   min-height: 600px;
+  box-sizing: border-box;
 }
 
 /* 4. Native In-Feed Placement */
@@ -136,3 +144,9 @@
     display: none;
   }
 }
+
+/* Gracefully hide the entire ad container if AdSense reports the ad as unfilled */
+.adWrapper:has(ins[data-ad-status="unfilled"]) {
+  display: none !important;
+}
+

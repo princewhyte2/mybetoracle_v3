@@ -65,7 +65,7 @@ export default async function LocaleRootLayout({ children, params }: LayoutProps
           id="google-adsense"
           src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${process.env.NEXT_PUBLIC_ADSENSE_CLIENT_ID || "ca-pub-8194555862221451"}`}
           crossOrigin="anonymous"
-          strategy="lazyOnload"
+          strategy="afterInteractive"
         />
         {children}
         <SiteFooter locale={safeLocale} />
