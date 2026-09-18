@@ -632,7 +632,7 @@ export function TodayExperience({ data, locale, scope = "today", heading, initia
   const [searchLoading, setSearchLoading] = useState(false);
   const [searchFailed, setSearchFailed] = useState(false);
   const [searchAttempt, setSearchAttempt] = useState(0);
-  const lastFeedRequest = useRef(JSON.stringify([data.dateIso, locale, "", 0, discovery, marketFilter, "all"]));
+  const lastFeedRequest = useRef(JSON.stringify([data.dateIso, locale, "", 0, discovery, marketFilter]));
   const searchInputRef = useRef<HTMLInputElement>(null);
   const infiniteSentinelRef = useRef<HTMLDivElement>(null);
   const marketNavRef = useRef<HTMLElement>(null);
@@ -710,13 +710,14 @@ export function TodayExperience({ data, locale, scope = "today", heading, initia
 
   useEffect(() => {
     const search = query.trim();
-    const identity = JSON.stringify([data.dateIso, locale, query, searchAttempt, discovery, marketFilter, filter]);
+    const serverView = filter === "live" ? "live" : discovery;
+    const identity = JSON.stringify([data.dateIso, locale, query, searchAttempt, serverView, marketFilter]);
     if (lastFeedRequest.current === identity) return;
     const controller = new AbortController(); let active = true;
     const timer = window.setTimeout(async () => {
       setSearchLoading(true); setSearchFailed(false);
       try {
-        const params = new URLSearchParams({ date:data.dateIso.slice(0,10), locale, view:filter==='live'?'live':discovery, page:'1' });
+        const params = new URLSearchParams({ date:data.dateIso.slice(0,10), locale, view:serverView, page:'1' });
         if(search.length>=2)params.set('search',search);
         if(marketFilter)params.set('marketGroup',marketFilter);
         const response=await fetch(`/api/today?${params}`,{cache:'no-store',signal:controller.signal});
@@ -782,7 +783,8 @@ export function TodayExperience({ data, locale, scope = "today", heading, initia
 
   const visibleCompetitions = filteredCompetitions.slice(0, visibleCompetitionCount);
 
-  const hasMoreToDisplay = visibleCompetitionCount < filteredCompetitions.length || Boolean(feed.pagination.hasMore);
+  const canPaginateServer = filter === "all";
+  const hasMoreToDisplay = visibleCompetitionCount < filteredCompetitions.length || (canPaginateServer && Boolean(feed.pagination.hasMore));
   const loadingMoreRef = useRef(false);
   const stateRef = useRef({ feed, filter, discovery, query, marketFilter, locale });
   useEffect(() => {
@@ -796,23 +798,24 @@ export function TodayExperience({ data, locale, scope = "today", heading, initia
       if (entry.isIntersecting && !autoScrollPaused) {
         if (visibleCompetitionCount < filteredCompetitions.length) {
           setVisibleCompetitionCount((current) => Math.min(filteredCompetitions.length, current + 20));
-        } else if (feed.pagination.hasMore && !loadingMoreRef.current) {
+        } else if (filter === "all" && feed.pagination.hasMore && !loadingMoreRef.current) {
           void loadMoreFixtures();
         }
       }
     }, { rootMargin: "1200px 0px" });
     observer.observe(sentinel);
     return () => observer.disconnect();
-  }, [autoScrollPaused, feed.pagination.hasMore, feed.pagination.nextCursor, filteredCompetitions.length, visibleCompetitionCount]);
+  }, [autoScrollPaused, feed.pagination.hasMore, feed.pagination.nextCursor, filter, filteredCompetitions.length, visibleCompetitionCount]);
 
   async function loadMoreFixtures() {
     const { feed: currentFeed, filter: currentFilter, discovery: currentDiscovery, query: currentQuery, marketFilter: currentMarketFilter, locale: currentLocale } = stateRef.current;
+    if (currentFilter !== "all") return;
     if (loadingMoreRef.current || !currentFeed.pagination.hasMore || !currentFeed.pagination.nextCursor) return;
     loadingMoreRef.current = true;
     setLoadingMore(true);
     setLoadMoreFailed(false);
     try {
-      const view = currentFilter === "live" ? "live" : currentDiscovery;
+      const view = currentDiscovery;
       const search = currentQuery.trim().length >= 2 ? currentQuery.trim() : undefined;
       const params = new URLSearchParams({
         date: currentFeed.dateIso.slice(0, 10),
@@ -1346,7 +1349,7 @@ export function TodayExperience({ data, locale, scope = "today", heading, initia
                 />
               </Fragment>
             ))}
-            {!loadingView && !searchLoading && !viewFailed && !searchFailed && filteredCompetitions.length === 0 && (Boolean(query.trim()) || !feed.pagination.hasMore) && (
+            {!loadingView && !searchLoading && !viewFailed && !searchFailed && filteredCompetitions.length === 0 && (Boolean(query.trim()) || filter !== "all" || !feed.pagination.hasMore) && (
               <div className={styles.emptyState}>
                 <Search size={24} />
                 <strong>{query.trim() || filter !== "all" ? copy.noMatches : marketEmptyLabels[locale][0]}</strong>
