@@ -94,7 +94,6 @@
   position: relative;
   background: var(--white);
   border: 1px solid var(--border);
-  border-left: 4px solid var(--action-blue, #155eef);
   border-radius: 10px;
   padding: 14px 16px;
   box-shadow: 0 1px 4px rgba(16, 24, 40, 0.04);
@@ -105,18 +104,6 @@
   transform: translateY(-2px);
   border-color: var(--action-blue, #155eef);
   box-shadow: 0 8px 22px rgba(16, 24, 40, 0.08);
-}
-.legCardWon {
-  border-left-color: #12b76a;
-}
-.legCardLost {
-  border-left-color: #f04438;
-}
-.legCardVoid {
-  border-left-color: #98a2b3;
-}
-.legCardPending {
-  border-left-color: var(--action-blue, #155eef);
 }
 
 /* Live Badge */
@@ -606,8 +593,8 @@
 .methodologyNotice {
   padding: 12px 16px;
   background: var(--canvas);
-  border-left: 3px solid var(--action-blue);
-  border-radius: 0 6px 6px 0;
+  border: 1px solid var(--border);
+  border-radius: 8px;
   font-size: 12px;
   line-height: 1.5;
   color: var(--muted-strong);

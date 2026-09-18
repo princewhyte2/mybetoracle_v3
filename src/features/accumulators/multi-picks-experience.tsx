@@ -181,15 +181,6 @@ function LegCard({
   const isFinished = leg.fixture.statusCode === "FT" || leg.fixture.statusCode === "AET" || leg.fixture.statusCode === "PEN";
   const isLive = ["1H", "2H", "HT", "ET", "P", "LIVE"].includes(leg.fixture.statusCode);
 
-  const cardStatusClass =
-    leg.result === "WON"
-      ? styles.legCardWon
-      : leg.result === "LOST"
-      ? styles.legCardLost
-      : leg.result === "VOID"
-      ? styles.legCardVoid
-      : styles.legCardPending;
-
   const settlementEvidenceText = useMemo(() => {
     if (!leg.settlementEvidence) return null;
     if (typeof leg.settlementEvidence === "string") return leg.settlementEvidence;
@@ -209,7 +200,7 @@ function LegCard({
   return (
     <>
       {showDate && <div className={styles.legDate}>{formatLegDate(locale, kickoff)}</div>}
-      <article className={`${styles.legCard} ${cardStatusClass}`}>
+      <article className={styles.legCard}>
         {/* Card Header: Position, League info, Kickoff / Live / Score & Outcome */}
         <header className={styles.cardHeader}>
           <div className={styles.cardHeaderLeft}>
