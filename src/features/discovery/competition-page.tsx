@@ -26,7 +26,8 @@ export async function generateMetadata({ params }: PageProps<'/[locale]/competit
   const entity = await identity(locale, competitionSlug);
   if (!entity) return { robots: { index: false, follow: false } };
   const seo = competitionLabels[locale];
-  return { ...discoveryMetadata(locale, `competitions/${entity.slug}`, interpolateDiscovery(seo.seoTitle, entity.name), interpolateDiscovery(seo.seoDescription, entity.name)),
+  const customImages = entity.emblemUrl ? [{ url: entity.emblemUrl, alt: entity.name }] : undefined;
+  return { ...discoveryMetadata(locale, `competitions/${entity.slug}`, interpolateDiscovery(seo.seoTitle, entity.name), interpolateDiscovery(seo.seoDescription, entity.name), customImages),
     alternates: { canonical: `/${locale}/competitions/${entity.slug}`, languages: await discoveryEntityAlternates('competition', entity.slug) } };
 }
 export default async function CompetitionPage({ params, searchParams }: PageProps<'/[locale]/competitions/[competitionSlug]'>) {

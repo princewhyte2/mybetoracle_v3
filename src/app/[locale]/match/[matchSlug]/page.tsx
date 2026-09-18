@@ -7,6 +7,7 @@ import { schemaEventStatus } from "@/features/match/schema-event-status";
 import { entitySlug } from "@/features/discovery/public-id";
 import { isLocale, locales, type Locale } from "@/i18n/config";
 import { interpolateSystem, systemLabels } from "@/i18n/system-labels";
+import { DEFAULT_OG_IMAGE } from "@/i18n/localized-metadata";
 
 const resolveMatch = cache((slug: string, locale: Locale) => getMatchDetail(slug, locale));
 
@@ -19,16 +20,44 @@ export async function generateMetadata({ params }: PageProps<"/[locale]/match/[m
   const { locale, matchSlug } = await params; if (!isLocale(locale)) notFound();
   const match = await resolved(matchSlug, locale); const copy = systemLabels[locale];
   const fields = { home: match.home.name, away: match.away.name };
-  const title = `${interpolateSystem(copy.matchTitle, fields)} | MyBetOracle`;
+  const rawTitle = interpolateSystem(copy.matchTitle, fields);
+  const fullTitle = `${rawTitle} | MyBetOracle`;
   const description = interpolateSystem(copy.matchDescription, fields);
-  const origin = process.env.NEXT_PUBLIC_SITE_URL || "https://www.mybetoracle.com";
+  const origin = (process.env.NEXT_PUBLIC_SITE_URL || "https://www.mybetoracle.com").replace(/\/$/, "");
   const canonical = `${origin}${match.canonicalPath}`;
   const localizedMatches = await Promise.all(locales.map(async (item) => [item, await resolved(matchSlug, item)] as const));
   const languages: Record<string, string> = Object.fromEntries(localizedMatches.map(([item, localized]) => [item, `${origin}${localized.canonicalPath}`]));
   const enMatch = localizedMatches.find(([item]) => item === "en")?.[1];
   if (enMatch) languages["x-default"] = `${origin}${enMatch.canonicalPath}`;
-  const images = [match.home.emblemUrl, match.away.emblemUrl].filter((value): value is string => Boolean(value));
-  return { title, description, alternates: { canonical, languages }, openGraph: { title, description, url: canonical, type: "website", ...(images.length ? { images } : {}) }, robots: { index: true, follow: true } };
+
+  const matchImages = [match.home.emblemUrl, match.away.emblemUrl].filter((value): value is string => Boolean(value));
+  const ogImages = matchImages.length > 0
+    ? [...matchImages.map((url) => ({ url, alt: `${match.home.name} vs ${match.away.name}` })), DEFAULT_OG_IMAGE]
+    : [DEFAULT_OG_IMAGE];
+  const twitterImage = matchImages[0] || DEFAULT_OG_IMAGE.url;
+
+  return {
+    title: rawTitle,
+    description,
+    alternates: { canonical, languages },
+    openGraph: {
+      type: "website",
+      siteName: "MyBetOracle",
+      title: fullTitle,
+      description,
+      url: canonical,
+      images: ogImages,
+    },
+    twitter: {
+      card: "summary_large_image",
+      site: "@mybetoracle",
+      creator: "@mybetoracle",
+      title: fullTitle,
+      description,
+      images: [twitterImage],
+    },
+    robots: { index: true, follow: true },
+  };
 }
 
 export default async function MatchPage({ params }: PageProps<"/[locale]/match/[matchSlug]">) {
