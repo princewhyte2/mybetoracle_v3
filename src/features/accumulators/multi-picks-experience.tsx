@@ -5,6 +5,7 @@ import {
   Bell,
   Bookmark,
   CalendarDays,
+  Check,
   ChevronLeft,
   ChevronRight,
   CircleCheck,
@@ -12,6 +13,7 @@ import {
   CircleX,
   Clock3,
   Compass,
+  Copy,
   Database,
   Globe2,
   History,
@@ -21,16 +23,20 @@ import {
   ReceiptText,
   Search,
   ShieldCheck,
+  Sparkles,
   Trophy,
   UserCircle,
   WandSparkles,
   X,
 } from "lucide-react";
-import { useRouter } from "next/navigation";
 import Image from "next/image";
-import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { Fragment, useEffect, useMemo, useState } from "react";
+import { AdSlot } from "@/components/ads/ad-slot";
 import { MboMark } from "@/components/brand/brand-marks";
 import { MobileProductMenu } from "@/components/navigation/mobile-product-menu";
+import { buildPublicMatchPath } from "@/features/match/public-match-url";
 import shellStyles from "@/features/today/today-experience.module.css";
 import { localeNames, locales, type Locale } from "@/i18n/config";
 import { getMessages, localeTags } from "@/i18n/messages";
@@ -94,77 +100,274 @@ function ResultBadge({ result, locale, compact = false }: { result: AccumulatorR
   );
 }
 
-function Crest({ name, shortName, emblemUrl }: { name: string; shortName: string | null; emblemUrl: string | null }) {
+function Crest({
+  name,
+  shortName,
+  emblemUrl,
+  colors,
+}: {
+  name: string;
+  shortName: string | null;
+  emblemUrl: string | null;
+  colors?: [string, string];
+}) {
+  const [failed, setFailed] = useState(false);
+  const initials = (shortName || name).slice(0, 2).toUpperCase();
   return (
-    <span className={styles.crest} aria-hidden="true">
-      {emblemUrl ? <Image src={emblemUrl} alt="" width={28} height={28} sizes="28px" /> : (shortName || name).slice(0, 2).toUpperCase()}
+    <span
+      className={styles.crest}
+      aria-hidden="true"
+      style={
+        colors
+          ? ({ "--crest-c1": colors[0], "--crest-c2": colors[1] } as React.CSSProperties)
+          : undefined
+      }
+    >
+      {emblemUrl && !failed ? (
+        <Image
+          src={emblemUrl}
+          alt=""
+          width={28}
+          height={28}
+          sizes="28px"
+          className={styles.crestImage}
+          onError={() => setFailed(true)}
+        />
+      ) : (
+        <span className={styles.crestInitials}>{initials}</span>
+      )}
     </span>
   );
 }
 
-function LegRow({ leg, locale, showDate, labels }: { leg: AccumulatorLeg; locale: Locale; showDate: boolean; labels: AccumulatorLabels }) {
+function LegCard({
+  leg,
+  locale,
+  showDate,
+  labels,
+}: {
+  leg: AccumulatorLeg;
+  locale: Locale;
+  showDate: boolean;
+  labels: AccumulatorLabels;
+}) {
   const kickoff = new Date(leg.fixture.kickoffAt);
   const identity = leg.fixture.identity;
   const competition = identity?.competition.name ?? leg.fixture.competition;
   const country = identity?.competition.country ?? leg.fixture.country;
+  const compEmblem = identity?.competition.emblemUrl;
+  const countryFlag = identity?.competition.countryFlagUrl;
   const home = identity?.homeTeam ?? { name: leg.fixture.homeTeam, shortName: leg.fixture.homeShortName, emblemUrl: null };
   const away = identity?.awayTeam ?? { name: leg.fixture.awayTeam, shortName: leg.fixture.awayShortName, emblemUrl: null };
+
+  const matchHref = leg.fixture.slug
+    ? `/${locale}/match/${leg.fixture.slug}`
+    : buildPublicMatchPath({
+        locale,
+        fixtureId: leg.fixture.id,
+        homeName: home.name,
+        awayName: away.name,
+      });
+
+  const hasScore = Boolean(
+    leg.fixture.score &&
+    leg.fixture.score.home !== null &&
+    leg.fixture.score.away !== null &&
+    typeof leg.fixture.score.home === "number" &&
+    typeof leg.fixture.score.away === "number"
+  );
+  const isFinished = leg.fixture.statusCode === "FT" || leg.fixture.statusCode === "AET" || leg.fixture.statusCode === "PEN";
+  const isLive = ["1H", "2H", "HT", "ET", "P", "LIVE"].includes(leg.fixture.statusCode);
+
+  const cardStatusClass =
+    leg.result === "WON"
+      ? styles.legCardWon
+      : leg.result === "LOST"
+      ? styles.legCardLost
+      : leg.result === "VOID"
+      ? styles.legCardVoid
+      : styles.legCardPending;
+
   return (
     <>
       {showDate && <div className={styles.legDate}>{formatLegDate(locale, kickoff)}</div>}
-      <article className={styles.legRow}>
-        <span className={styles.legPosition}>{leg.position}</span>
-        <div className={styles.fixtureIdentity}>
-          <div className={styles.fixtureMeta}>
-            <span>{country} / {competition}</span>
-            <time>{formatLegTime(locale, kickoff)}</time>
-          </div>
-          <div className={styles.fixtureTeams}>
-            <span>
-              <Crest name={home.name} shortName={home.shortName} emblemUrl={home.emblemUrl} />
-              {home.name}
+      <article className={`${styles.legCard} ${cardStatusClass}`}>
+        {/* Card Header: Position, League info, Kickoff / Live / Score & Outcome */}
+        <header className={styles.cardHeader}>
+          <div className={styles.cardHeaderLeft}>
+            <span className={styles.legPosition} title={`${labels.selection} #${leg.position}`}>
+              {leg.position}
             </span>
-            <small>vs</small>
-            <span>
-              {away.name}
-              <Crest name={away.name} shortName={away.shortName} emblemUrl={away.emblemUrl} />
-            </span>
+            <div className={styles.competitionBadge} title={`${country} · ${competition}`}>
+              {compEmblem ? (
+                <span className={styles.compEmblemWrap} aria-hidden="true">
+                  <Image src={compEmblem} alt="" width={16} height={16} sizes="16px" className={styles.compEmblemImg} />
+                </span>
+              ) : countryFlag ? (
+                <span className={styles.compEmblemWrap} aria-hidden="true">
+                  <Image src={countryFlag} alt="" width={16} height={12} sizes="16px" className={styles.compEmblemImg} />
+                </span>
+              ) : null}
+              <span className={styles.competitionText}>
+                {country ? `${country} · ${competition}` : competition}
+              </span>
+            </div>
           </div>
-        </div>
-        <div className={styles.selectionCell}>
-          <span>{labels.selection}</span>
-          <strong>{leg.selectionLabel}</strong>
-          <small>{labels.quality}: {leg.prediction.qualityTier}</small>
-        </div>
-        <div className={styles.legEvidence} title={labels.confidenceTitle}>
-          <span>{labels.confidence}</span>
-          <strong>{leg.prediction.confidenceScore}</strong>
-        </div>
-        <div className={styles.legOdds}>
-          <span>{labels.odds}</span>
-          <strong>{leg.decimalOdds.toFixed(2)}</strong>
-        </div>
-        <ResultBadge result={leg.result} locale={locale} compact />
-        <button
-          className={styles.legOpen}
-          disabled
-          title={labels.unavailable}
+          <div className={styles.cardHeaderRight}>
+            {isLive ? (
+              <span className={styles.liveBadge} title="Match Live">
+                <span className={styles.liveDot} />
+                <span>LIVE {leg.fixture.statusCode !== "LIVE" ? leg.fixture.statusCode : ""}</span>
+              </span>
+            ) : (
+              <time className={styles.kickoffTime} dateTime={leg.fixture.kickoffAt}>
+                <Clock3 size={12} aria-hidden="true" />
+                <span>{formatLegTime(locale, kickoff)}</span>
+              </time>
+            )}
+
+            {hasScore && (
+              <span className={styles.scoreBadge} title={isFinished ? "Full Time" : "Match Score"}>
+                {isFinished && <small>FT</small>}
+                <strong>{leg.fixture.score?.home} - {leg.fixture.score?.away}</strong>
+              </span>
+            )}
+            <ResultBadge result={leg.result} locale={locale} compact />
+          </div>
+        </header>
+
+        {/* Card Body: Teams Matchup */}
+        <Link
+          href={matchHref}
+          className={styles.matchupRow}
           aria-label={labels.openMatch.replace("{home}", home.name).replace("{away}", away.name)}
         >
-          <ChevronRight size={16} />
-        </button>
+          <div className={styles.teamHome}>
+            <span className={styles.teamName}>{home.name}</span>
+            <Crest name={home.name} shortName={home.shortName} emblemUrl={home.emblemUrl} colors={leg.fixture.homeColors} />
+          </div>
+          <div className={styles.matchupDivider}>
+            {hasScore ? (
+              <span className={styles.matchScoreMiddle}>
+                {leg.fixture.score?.home} : {leg.fixture.score?.away}
+              </span>
+            ) : (
+              <span className={styles.vsBadge}>VS</span>
+            )}
+          </div>
+          <div className={styles.teamAway}>
+            <Crest name={away.name} shortName={away.shortName} emblemUrl={away.emblemUrl} colors={leg.fixture.awayColors} />
+            <span className={styles.teamName}>{away.name}</span>
+          </div>
+        </Link>
+
+        {/* Card Intelligence: Selection Pill, Tier, Confidence, Odds & Link */}
+        <div className={styles.intelligenceBar}>
+          <div className={styles.selectionGroup}>
+            <span className={styles.selectionTag}>{labels.selection}</span>
+            <strong className={styles.selectionPill}>
+              <WandSparkles size={14} className={styles.selectionIcon} aria-hidden="true" />
+              <span>{leg.selectionLabel}</span>
+            </strong>
+            <span
+              className={`${styles.tierBadge} ${styles[`tier_${leg.prediction.qualityTier.toLowerCase()}`] || ""}`}
+              title={`${labels.quality}: ${leg.prediction.qualityTier}`}
+            >
+              <span className={styles.tierDot} />
+              {leg.prediction.qualityTier}
+            </span>
+          </div>
+
+          <div className={styles.evidenceGroup}>
+            <div className={styles.confidenceChip} title={labels.confidenceTitle}>
+              <Sparkles size={13} className={styles.confIcon} aria-hidden="true" />
+              <div className={styles.confMeterGroup}>
+                <div className={styles.confHeader}>
+                  <span className={styles.confLabel}>{labels.confidence}</span>
+                  <strong className={styles.confValue}>{leg.prediction.confidenceScore}%</strong>
+                </div>
+                <div className={styles.confMeterTrack} aria-hidden="true">
+                  <div
+                    className={styles.confMeterFill}
+                    style={{
+                      width: `${Math.min(100, Math.max(0, leg.prediction.confidenceScore))}%`,
+                      backgroundColor:
+                        leg.prediction.confidenceScore >= 75
+                          ? "#12b76a"
+                          : leg.prediction.confidenceScore >= 60
+                          ? "#2e90fa"
+                          : "#f79009",
+                    }}
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className={styles.oddsChip} title={labels.oddsSnapshot}>
+              <span className={styles.oddsLabel}>{labels.odds}</span>
+              <strong className={styles.oddsValue}>{leg.decimalOdds.toFixed(2)}</strong>
+              {leg.oddsSnapshot?.bookmaker && (
+                <small className={styles.bookmakerTag}>{leg.oddsSnapshot.bookmaker}</small>
+              )}
+            </div>
+
+            <Link
+              href={matchHref}
+              className={styles.matchDetailLink}
+              title={labels.viewMatchDetails}
+              aria-label={labels.viewMatchDetails}
+            >
+              <span>{labels.viewMatchDetails}</span>
+              <ChevronRight size={15} aria-hidden="true" />
+            </Link>
+          </div>
+        </div>
+
+        {/* Settlement Evidence if settled */}
+        {leg.settlementEvidence && (
+          <div className={styles.settlementEvidence}>
+            <ShieldCheck size={13} className={styles.settlementIcon} aria-hidden="true" />
+            <span>{leg.settlementEvidence}</span>
+          </div>
+        )}
       </article>
     </>
   );
 }
 
-function Summary({ accumulator, labels, locale }: { accumulator: Accumulator; labels: AccumulatorLabels; locale: Locale }) {
+const LegRow = LegCard;
+
+function Summary({
+  accumulator,
+  labels,
+  locale,
+  onCopySlip,
+  isCopied,
+}: {
+  accumulator: Accumulator;
+  labels: AccumulatorLabels;
+  locale: Locale;
+  onCopySlip: () => void;
+  isCopied: boolean;
+}) {
   const published = new Date(accumulator.publishedAt);
   return (
     <section className={styles.summaryPanel}>
       <header>
-        <span>{accumulator.scope === "DAILY" ? labels.daily : labels.weekly}</span>
-        <strong>{labels.option} {accumulator.variant}</strong>
+        <div className={styles.summaryHeaderLeft}>
+          <span>{accumulator.scope === "DAILY" ? labels.daily : labels.weekly}</span>
+          <strong>{labels.option} {accumulator.variant}</strong>
+        </div>
+        <button
+          type="button"
+          onClick={onCopySlip}
+          className={`${styles.copySlipButton} ${isCopied ? styles.copySlipButtonCopied : ""}`}
+          title={isCopied ? labels.slipCopied : labels.copySlip}
+          aria-label={isCopied ? labels.slipCopied : labels.copySlip}
+        >
+          {isCopied ? <Check size={14} aria-hidden="true" /> : <Copy size={14} aria-hidden="true" />}
+          <span>{isCopied ? labels.slipCopied : labels.copySlip}</span>
+        </button>
       </header>
       <div className={styles.summaryMain}>
         <div className={styles.targetMetric}>
@@ -179,7 +382,7 @@ function Summary({ accumulator, labels, locale }: { accumulator: Accumulator; la
         </div>
         <div className={styles.confidenceMetric}>
           <span>{labels.averageConfidence}</span>
-          <strong>{accumulator.averageConfidence}</strong>
+          <strong>{accumulator.averageConfidence}%</strong>
           <small>{labels.arithmeticAverage}</small>
         </div>
         <div className={styles.summaryStatus}>
@@ -310,6 +513,7 @@ export function MultiPicksExperience({ daily, weekly, locale }: { daily: Accumul
   const [query, setQuery] = useState("");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
+  const [copiedSlipId, setCopiedSlipId] = useState<string | null>(null);
   const data = scope === "DAILY" ? daily : weekly;
   const normalizedQuery = query.trim().toLocaleLowerCase(localeTags[locale]);
   const visibleItems = useMemo(
@@ -330,6 +534,26 @@ export function MultiPicksExperience({ daily, weekly, locale }: { daily: Accumul
   );
   const variants = useMemo(() => visibleItems.filter((item) => item.targetBand === band), [band, visibleItems]);
   const selected = variants.find((item) => item.variant === variant) ?? variants[0];
+
+  const handleCopySlip = () => {
+    if (!selected) return;
+    const header = `MyBetOracle Multi-Picks • Option ${selected.variant} (${selected.targetLabel})\nTotal Odds: ${selected.totalOdds.toFixed(2)} • ${selected.legs.length} Selections\n───────────────────────────────`;
+    const lines = selected.legs.map((leg, i) => {
+      const homeName = leg.fixture.identity?.homeTeam.name ?? leg.fixture.homeTeam;
+      const awayName = leg.fixture.identity?.awayTeam.name ?? leg.fixture.awayTeam;
+      return `${i + 1}. ${homeName} vs ${awayName}\n   Pick: ${leg.selectionLabel} (@ ${leg.decimalOdds.toFixed(2)}) • Conf: ${leg.prediction.confidenceScore}%`;
+    });
+    const currentUrl = typeof window !== "undefined" ? window.location.href : `https://www.mybetoracle.com/${locale}/multi-picks`;
+    const footer = `───────────────────────────────\n${currentUrl}`;
+    const fullText = [header, ...lines, footer].join("\n");
+
+    if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
+      navigator.clipboard.writeText(fullText).then(() => {
+        setCopiedSlipId(selected.id);
+        setTimeout(() => setCopiedSlipId(null), 2500);
+      }).catch(() => {});
+    }
+  };
 
   function navigate(route?: string) {
     if (route) router.push(`/${locale}/${route}`);
@@ -466,6 +690,10 @@ export function MultiPicksExperience({ daily, weekly, locale }: { daily: Accumul
             </div>
           </section>
 
+          <div className={styles.adLeaderboardWrapper}>
+            <AdSlot format="leaderboard" label={labels.advertisement} />
+          </div>
+
           <section className={styles.bandSection}>
             <header>
               <div>
@@ -504,7 +732,13 @@ export function MultiPicksExperience({ daily, weekly, locale }: { daily: Accumul
                   </button>
                 ))}
               </nav>
-              <Summary accumulator={selected} labels={labels} locale={locale} />
+              <Summary
+                accumulator={selected}
+                labels={labels}
+                locale={locale}
+                onCopySlip={handleCopySlip}
+                isCopied={copiedSlipId === selected.id}
+              />
               <section className={styles.legsSection}>
                 <header>
                   <div>
@@ -512,13 +746,22 @@ export function MultiPicksExperience({ daily, weekly, locale }: { daily: Accumul
                     <span>{selected.legs.length} {labels.selections}</span>
                   </div>
                 </header>
-                <div>
+                <div className={styles.legsList}>
                   {selected.legs.map((item, index) => {
                     const previous = selected.legs[index - 1];
                     const showDate =
                       scope === "WEEKLY" &&
                       (!previous || new Date(previous.fixture.kickoffAt).toDateString() !== new Date(item.fixture.kickoffAt).toDateString());
-                    return <LegRow key={item.id} leg={item} locale={locale} labels={labels} showDate={showDate} />;
+                    return (
+                      <Fragment key={item.id}>
+                        {index === 2 && selected.legs.length >= 4 && (
+                          <div className={styles.adInFeedWrapper}>
+                            <AdSlot format="in-feed" label={labels.advertisement} />
+                          </div>
+                        )}
+                        <LegCard leg={item} locale={locale} labels={labels} showDate={showDate} />
+                      </Fragment>
+                    );
                   })}
                 </div>
               </section>
@@ -562,6 +805,9 @@ export function MultiPicksExperience({ daily, weekly, locale }: { daily: Accumul
               {labels.completeHistory} <ChevronRight size={15} />
             </button>
           </section>
+          <div className={styles.adRailWrapper}>
+            <AdSlot format="rectangle" label={labels.advertisement} />
+          </div>
           <section className={`${styles.railPanel} ${styles.uncertaintyPanel}`}>
             <header>
               <span>{labels.responsibleUncertainty}</span>
@@ -570,6 +816,10 @@ export function MultiPicksExperience({ daily, weekly, locale }: { daily: Accumul
             <p>{labels.uncertaintyCopy}</p>
           </section>
         </aside>
+      </div>
+
+      <div className={styles.mobileAnchorWrapper}>
+        <AdSlot format="mobile-anchor" label={labels.advertisement} />
       </div>
 
       <nav className={shellStyles.mobileBottomNav} aria-label={common.mobileNavigation}>
