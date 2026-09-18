@@ -639,10 +639,13 @@
   .bandGrid { grid-template-columns: repeat(4, minmax(86px, 1fr)); overflow-x: auto; scrollbar-width: none; }
   .bandGrid button { min-width: 86px; padding: 8px 10px; }
   .bandGrid button strong { font-size: 12px; }
+  .variantTabs button { min-width: 92px; padding: 0 10px; gap: 6px; font-size: 12px; }
+  .variantTabs button span { min-width: 32px; padding: 2px 6px; font-size: 11px; }
 
   /* Mobile Summary Panel */
   .summaryMain { grid-template-columns: repeat(2, 1fr); min-height: auto; padding: 10px 0; gap: 10px 0; }
   .summaryMain > div { padding: 4px 12px; min-height: 52px; }
+  .confidenceMetric { grid-column: 1 / 3; border-right: 0 !important; }
   .summaryStatus { grid-column: 1 / 3; display: flex !important; min-height: 42px !important; flex-direction: row; align-items: center; justify-content: space-between; border-top: 1px solid rgb(169 211 255 / 15%); border-right: 0 !important; padding-top: 8px !important; }
   .totalMetric strong { font-size: 24px; }
   .confidenceMetric strong { font-size: 22px; }
@@ -657,12 +660,12 @@
   .intelligenceBar { flex-direction: column; align-items: stretch; gap: 10px; padding: 10px 12px; }
   .selectionGroup { justify-content: space-between; width: 100%; gap: 8px; }
   .selectionPill { font-size: 12.5px; padding: 4px 10px; }
-  .evidenceGroup { width: 100%; justify-content: space-between; margin-left: 0; gap: 6px; }
+  .evidenceGroup { width: 100%; flex-wrap: wrap; margin-left: 0; gap: 8px; }
+  .confidenceChip, .oddsChip { flex: 1 1 auto; justify-content: center; }
   .confLabel { font-size: 9.5px; }
   .confValue { font-size: 12px; }
   .oddsValue { font-size: 13px; }
-  .matchDetailLink span { display: none; }
-  .matchDetailLink { padding: 5px 8px; }
+  .matchDetailLink { flex: 1 0 100%; justify-content: center; padding: 8px 10px; }
 
   .drawer { top: auto; bottom: 0; width: 100%; max-height: calc(100vh - 40px); height: auto; border-radius: 12px 12px 0 0; }
 }
@@ -670,9 +673,12 @@
 @media (max-width: 400px) {
   .dateControl strong { font-size: 11px; }
   .bandSection header small { display: none; }
-  .matchupRow { grid-template-columns: 1fr; gap: 8px; text-align: left; }
-  .teamHome, .teamAway { justify-content: flex-start; gap: 8px; }
-  .matchupDivider { display: none; }
+  .matchupRow { grid-template-columns: 1fr; gap: 4px; text-align: left; }
+  .teamHome, .teamAway { justify-content: flex-start; gap: 10px; }
+  .teamHome .teamName { order: 2; }
+  .teamHome .crest { order: 1; }
+  .matchupDivider { justify-content: flex-start; padding-left: 38px; }
+  .vsBadge { font-size: 10px; padding: 2px 7px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
