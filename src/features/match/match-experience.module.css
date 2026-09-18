@@ -83,7 +83,7 @@
 
 .competitionLine {
   display: grid;
-  grid-template-columns: 36px auto 1fr 34px;
+  grid-template-columns: 36px minmax(0, 1fr) auto 34px;
   align-items: center;
   min-height: 42px;
   gap: 8px;
@@ -104,8 +104,8 @@
   font-weight: 850;
 }
 
-.competitionLine strong { color: var(--graphite); font-size: 14px; font-weight: 750; }
-.competitionLine small { font-size: 12px; font-weight: 650; }
+.competitionLine strong { min-width: 0; overflow: hidden; color: var(--graphite); font-size: 14px; font-weight: 750; text-overflow: ellipsis; white-space: nowrap; }
+.competitionLine small { max-width: 110px; overflow: hidden; font-size: 12px; font-weight: 650; text-align: right; text-overflow: ellipsis; white-space: nowrap; }
 .competitionLine button { display: grid; width: 32px; height: 32px; place-items: center; border: 0; border-radius: 5px; background: transparent; color: var(--muted-text); }
 .competitionLine button:hover { background: var(--canvas); }
 .competitionLine .saved { color: var(--action-blue); }
@@ -191,10 +191,9 @@
 .oraclePanel > header span { display: flex; align-items: center; gap: 6px; color: var(--oracle-ice); font-size: 12px; font-weight: 850; text-transform: uppercase; letter-spacing: 0.03em; }
 .oraclePanel > header small { color: var(--dark-muted); font-size: 11px; }
 
-.oracleDecision { display: grid; grid-template-columns: 80px minmax(0, 1fr) 100px; align-items: center; gap: 14px; padding: 18px 16px; }
-.oracleScore { display: grid; grid-template-columns: auto auto; align-items: end; justify-content: center; }
+.oracleDecision { display: grid; grid-template-columns: 60px minmax(0, 1fr) 100px; align-items: center; gap: 14px; padding: 18px 16px; }
+.oracleScore { display: grid; justify-content: center; }
 .oracleScore strong { color: var(--oracle-ice); font-family: var(--font-sora), sans-serif; font-size: 36px; line-height: 1; font-variant-numeric: tabular-nums; }
-.oracleScore span { color: var(--dark-muted); font-size: 12px; }
 .oraclePick { min-width: 0; }
 .oraclePick > span { color: var(--sky-blue); font-size: 11px; font-weight: 800; }
 .oraclePick h2 { margin: 3px 0 5px; font-family: var(--font-sora), sans-serif; font-size: 17px; font-weight: 750; }
@@ -340,6 +339,7 @@
 }
 .h2hRow:last-child { border-bottom: 0; }
 .h2hRow time { color: #64748b; font-size: 11px; font-weight: 500; }
+.h2hRow > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .h2hRow span:nth-of-type(1) { text-align: right; }
 .h2hRow small { color: #64748b; font-size: 11px; text-align: right; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .h2hTeamWinner { font-weight: 800 !important; color: #0f172a !important; }
@@ -347,11 +347,13 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  min-width: 0;
   padding: 3px 8px;
   border-radius: 4px;
   font-size: 12px;
   font-weight: 800;
   font-variant-numeric: tabular-nums;
+  white-space: nowrap;
   background: #f1f5f9;
   color: #0f172a;
 }
@@ -556,7 +558,7 @@
 
 @media (max-width: 1280px) {
   .scoreMain { padding-right: 16px; padding-left: 16px; }
-  .oracleDecision { grid-template-columns: 70px minmax(0, 1fr) 90px; gap: 10px; }
+  .oracleDecision { grid-template-columns: 56px minmax(0, 1fr) 90px; gap: 10px; }
 }
 
 @media (max-width: 820px) {
@@ -566,6 +568,8 @@
 
 @media (max-width: 610px) {
   .breadcrumb { min-height: 28px; }
+  .competitionLine { min-height: 50px; gap: 10px; padding: 0 12px; }
+  .competitionLine small { max-width: 86px; }
   .scoreMain { grid-template-columns: minmax(0, 1fr) 90px minmax(0, 1fr); min-height: 160px; gap: 10px; padding: 16px 10px; }
   .crestLarge { width: 52px; height: 52px; }
   .scoreTeam h2 { font-size: 15px; }
@@ -575,15 +579,16 @@
   .formStrip span { width: 20px; height: 20px; font-size: 10px; }
   .venueLine { display: grid; justify-content: start; min-height: 48px; gap: 4px; padding: 8px 12px; }
   .matchTabs { margin-right: -12px; margin-left: -12px; border-right: 0; border-left: 0; }
-  .oracleDecision { grid-template-columns: 60px minmax(0, 1fr); gap: 10px; padding: 14px 12px; }
+  .oracleDecision { grid-template-columns: 48px minmax(0, 1fr); gap: 10px; padding: 14px 12px; }
   .oracleAction { grid-column: 1 / 3; display: grid; grid-template-columns: 1fr auto auto; align-items: center; justify-items: start; gap: 8px; padding-top: 10px; border-top: 1px solid rgb(169 211 255 / 16%); }
   .oracleAction button { justify-self: end; }
   .evidenceStrip { display: flex; overflow-x: auto; scrollbar-width: none; }
   .evidenceStrip span { min-width: 155px; }
   .streakCompare { grid-template-columns: 1fr; gap: 12px; padding: 12px; }
   .compareDivider { display: none; }
-  .h2hRow { grid-template-columns: 65px minmax(70px, 1fr) 40px minmax(70px, 1fr); padding: 0 8px; }
+  .h2hRow { grid-template-columns: 60px minmax(60px, 1fr) 54px minmax(60px, 1fr); padding: 0 8px; }
   .h2hRow small { display: none; }
+  .h2hScore { padding: 3px 6px; }
   .timelineRow { grid-template-columns: minmax(0, 1fr) 44px minmax(0, 1fr); gap: 6px; }
   .timelineMinuteBadge { min-width: 32px; font-size: 10px; }
   .timelineCardBody strong { font-size: 11px; }
@@ -682,6 +687,14 @@
   .mobileStickyActionPill {
     display: none;
   }
+}
+
+@media (max-width: 900px) {
+  .mainWithStickyPill { padding-bottom: 150px; }
+}
+
+@media (max-width: 610px) {
+  .mainWithStickyPill { padding-bottom: 146px; }
 }
 
 .mobileStickyActionPillLeft {

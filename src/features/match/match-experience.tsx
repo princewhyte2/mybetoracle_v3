@@ -121,8 +121,8 @@ function OraclePanel({ match, copy, outcomes, locale }: { match: MatchDetail; co
     <section className={styles.oraclePanel}>
       <header><span><Sparkles size={15} /> {copy.oracleDecision}</span><small>{copy.preMatch}</small></header>
       {match.oracleMarket.available && <div className={styles.oracleDecision}>
-        {match.oracleMarket.available && <><div className={styles.oracleScore} title="Oracle Score"><strong>{match.oracleScore}</strong><span>/100</span></div>
-        <div className={styles.oraclePick}><span>{match.oracleMarket.market}</span><h2>{match.oracleMarket.selection}</h2></div></>}
+        {match.oracleMarket.available && <><div className={styles.oracleScore} title="Oracle Score"><strong>{match.oracleScore}</strong></div>
+        <div className={styles.oraclePick}><span>{predictionMarketLabel(locale, match.oracleMarket.market)}</span><h2>{match.oracleMarket.selection}</h2></div></>}
         {match.oracleMarket.available && match.oracleMarket.odds !== null && <div className={styles.oracleAction}><span>{copy.referenceOdds}</span><strong>{match.oracleMarket.odds}</strong>{SHOW_MATCH_ADD_TO_PICKS && <button><Plus size={16} /> {copy.myPicks}</button>}</div>}
       </div>}
       <div className={styles.predictionGrid}>{match.predictions.filter(prediction => prediction.available).map((prediction) => <div key={prediction.market} data-outcome={prediction.outcome}><span>{predictionMarketLabel(locale, prediction.market)}</span><strong>{prediction.selection}</strong><small>{prediction.outcome ? outcomes[prediction.outcome] : `${prediction.confidence}/100${prediction.odds ? ` · ${prediction.odds}` : ""}`}</small></div>)}</div>
@@ -497,7 +497,7 @@ export function MatchExperience({ match: initialMatch, locale }: { match: MatchD
           <div className={shellStyles.sidebarFooter}><button onClick={() => navigate("competitions")}><Globe2 size={17} /> {copy.allCompetitions}</button><button onClick={() => navigate("responsible-play")}><ShieldCheck size={17} /> {copy.responsiblePlay}</button></div>
         </aside>
 
-        <main className={`${shellStyles.main} ${styles.main}`}>
+        <main className={`${shellStyles.main} ${styles.main} ${SHOW_MATCH_ADD_TO_PICKS && match.oracleMarket.available ? styles.mainWithStickyPill : ""}`}>
           <nav className={styles.breadcrumb} aria-label={copy.breadcrumb}><button onClick={() => navigate("today")}><ChevronLeft size={15} /> {common.today}</button><span>/</span><button onClick={() => navigate("competitions")}>{match.competition.name}</button></nav>
 
           <section className={styles.scoreboard}>
@@ -643,7 +643,7 @@ export function MatchExperience({ match: initialMatch, locale }: { match: MatchD
         </aside>
       </div>
 
-      {match.oracleMarket.available && (
+      {SHOW_MATCH_ADD_TO_PICKS && match.oracleMarket.available && (
         <div className={styles.mobileStickyActionPill}>
           <div className={styles.mobileStickyActionPillLeft}>
             <span>Oracle</span>
