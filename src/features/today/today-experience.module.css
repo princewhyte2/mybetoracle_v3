@@ -392,6 +392,32 @@
   font-weight: 800;
 }
 
+.pinnedLeague > span.leagueEmblem {
+  height: 28px;
+  border-color: transparent;
+  background: var(--white);
+  box-shadow: 0 1px 2px rgb(0 0 0 / 5%);
+}
+
+.leagueEmblemImg {
+  object-fit: contain;
+}
+
+.leagueMatchCount {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 9px;
+  background: var(--blue-mist);
+  color: var(--heritage-blue);
+  font-size: 10px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
 .pinnedLeague strong {
   overflow: hidden;
   font-size: 11px;
@@ -2745,4 +2771,62 @@
   color: var(--action-blue);
   letter-spacing: 0.03em;
 }
+
+.feedFooterNav {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 16px 0 8px;
+}
+
+.skipToFooterLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--white);
+  color: var(--muted-strong);
+  font-size: 12px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.skipToFooterLink:hover {
+  background: var(--canvas);
+  color: var(--graphite);
+}
+
+.skipToFooterLink:focus-visible {
+  outline: 2px solid var(--action-blue);
+  outline-offset: 1px;
+}
+
+.resumeScrollButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: 6px;
+  border: 1px solid var(--action-blue);
+  background: var(--blue-mist);
+  color: var(--heritage-blue);
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.resumeScrollButton:hover {
+  background: var(--oracle-ice);
+}
+
+.resumeScrollButton:focus-visible {
+  outline: 2px solid var(--action-blue);
+  outline-offset: 1px;
+}
+
 

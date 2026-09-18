@@ -1,6 +1,6 @@
 "use client";
 
-import { competitionShortcuts } from "./competition-shortcuts";
+import { competitionShortcuts, CANONICAL_TOP_LEAGUES } from "./competition-shortcuts";
 import { predictionMarketLabel } from "@/i18n/prediction-markets";
 import { marketPresentation, valueViewLabels } from "@/features/discovery/market-presentation";
 import { discoveryLabels } from "@/features/discovery/labels";
@@ -78,6 +78,25 @@ function mergeTodayFeed(current: TodayData, next: TodayData): TodayData {
 
 const SHOW_TODAY_ADD_TO_PICKS = false;
 const SHOW_TODAY_SORT = false;
+const SHOW_TODAY_COMPETITION_FOLLOWING = false;
+
+const footerJumpLabels: Record<Locale, string> = {
+  en: "Skip to footer",
+  es: "Ir al pie de página",
+  fr: "Aller au pied de page",
+  de: "Zum Seitenende springen",
+  it: "Vai al piè di pagina",
+  pt: "Ir para o rodapé",
+};
+
+const resumeScrollLabels: Record<Locale, string> = {
+  en: "Resume auto-scroll",
+  es: "Reanudar desplazamiento",
+  fr: "Reprendre le défilement",
+  de: "Automatisches Scrollen fortsetzen",
+  it: "Riprendi scorrimento",
+  pt: "Retomar rolagem",
+};
 
 
 const marketOptions = [
@@ -550,17 +569,21 @@ export function TodayExperience({ data, locale, scope = "today", heading, initia
     if (pinnedCompetitions && pinnedCompetitions.length > 0) {
       return pinnedCompetitions;
     }
-    return feed.competitions.slice(0, 8).map((c) => ({
-      id: c.id,
-      name: c.name,
-      countryCode: c.countryCode,
-    }));
-  }, [pinnedCompetitions, feed.competitions]);
+    return CANONICAL_TOP_LEAGUES;
+  }, [pinnedCompetitions]);
 
   const pinnedShortcuts = useMemo(
     () => competitionShortcuts(defaultPinnedCompetitions, locale),
     [defaultPinnedCompetitions, locale],
   );
+
+  const matchesByCompetitionId = useMemo(() => {
+    const map = new Map<string, number>();
+    for (const comp of feed.competitions) {
+      map.set(comp.id, comp.matches.length);
+    }
+    return map;
+  }, [feed.competitions]);
 
   const countryGroups = useMemo(() => {
     const map = new Map<string, { country: string; countryCode: string; competitions: Array<{ id: string; name: string; href: string }> }>();
@@ -603,6 +626,7 @@ export function TodayExperience({ data, locale, scope = "today", heading, initia
   const [visibleCompetitionCount, setVisibleCompetitionCount] = useState(20);
   const [loadingMore, setLoadingMore] = useState(false);
   const [loadMoreFailed, setLoadMoreFailed] = useState(false);
+  const [autoScrollPaused, setAutoScrollPaused] = useState(false);
   const loadingView = false;
   const [viewFailed, setViewFailed] = useState(false);
   const [searchLoading, setSearchLoading] = useState(false);
@@ -769,7 +793,7 @@ export function TodayExperience({ data, locale, scope = "today", heading, initia
     const sentinel = infiniteSentinelRef.current;
     if (!sentinel || typeof IntersectionObserver === "undefined") return;
     const observer = new IntersectionObserver(([entry]) => {
-      if (entry.isIntersecting) {
+      if (entry.isIntersecting && !autoScrollPaused) {
         if (visibleCompetitionCount < filteredCompetitions.length) {
           setVisibleCompetitionCount((current) => Math.min(filteredCompetitions.length, current + 20));
         } else if (feed.pagination.hasMore && !loadingMoreRef.current) {
@@ -779,7 +803,7 @@ export function TodayExperience({ data, locale, scope = "today", heading, initia
     }, { rootMargin: "1200px 0px" });
     observer.observe(sentinel);
     return () => observer.disconnect();
-  }, [feed.pagination.hasMore, feed.pagination.nextCursor, filteredCompetitions.length, visibleCompetitionCount]);
+  }, [autoScrollPaused, feed.pagination.hasMore, feed.pagination.nextCursor, filteredCompetitions.length, visibleCompetitionCount]);
 
   async function loadMoreFixtures() {
     const { feed: currentFeed, filter: currentFilter, discovery: currentDiscovery, query: currentQuery, marketFilter: currentMarketFilter, locale: currentLocale } = stateRef.current;
@@ -995,14 +1019,28 @@ export function TodayExperience({ data, locale, scope = "today", heading, initia
           {pinnedShortcuts.length > 0 && (
             <div className={styles.sidebarSection}>
               <div className={styles.sidebarHeading}>
-                <span>{copy.following}</span>
+                <span>{copy.topLeagues}</span>
               </div>
-              {pinnedShortcuts.map(({ id, name, countryCode, href }) => (
-                <Link className={styles.pinnedLeague} key={id} href={href} prefetch={false}>
-                  <span className={styles.countryCode}>{countryCode}</span>
-                  <strong>{name}</strong>
-                </Link>
-              ))}
+              {pinnedShortcuts.map(({ id, name, countryCode, emblemUrl, href }) => {
+                const matchCount = matchesByCompetitionId.get(id) ?? 0;
+                return (
+                  <Link className={styles.pinnedLeague} key={id} href={href} prefetch={false} title={name}>
+                    {emblemUrl ? (
+                      <span className={styles.leagueEmblem} aria-hidden="true">
+                        <Image src={emblemUrl} alt="" width={18} height={18} className={styles.leagueEmblemImg} />
+                      </span>
+                    ) : (
+                      <span className={styles.countryCode} aria-hidden="true">{countryCode}</span>
+                    )}
+                    <strong>{name}</strong>
+                    {matchCount > 0 && (
+                      <small className={styles.leagueMatchCount} title={`${matchCount} ${common.fixtures}`}>
+                        {matchCount}
+                      </small>
+                    )}
+                  </Link>
+                );
+              })}
             </div>
           )}
 
@@ -1145,6 +1183,17 @@ export function TodayExperience({ data, locale, scope = "today", heading, initia
                 <span>{copy.finished}</span>
                 <small className={styles.statusPillBadge}>{filterCounts.finished}</small>
               </button>
+              {SHOW_TODAY_COMPETITION_FOLLOWING && (
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={filter === "following"}
+                  className={`${styles.statusPill} ${filter === "following" ? styles.statusPillActive : ""}`}
+                  onClick={() => void selectFilter("following")}
+                >
+                  <span>{copy.following}</span>
+                </button>
+              )}
             </div>
             {SHOW_TODAY_SORT && <button className={styles.sortButton}><ListFilter size={17} /> {copy.sort}</button>}
           </section>
@@ -1321,6 +1370,24 @@ export function TodayExperience({ data, locale, scope = "today", heading, initia
                 </button>
               </div>
             )}
+            <div className={styles.feedFooterNav}>
+              <a
+                href="#site-footer"
+                className={styles.skipToFooterLink}
+                onClick={() => setAutoScrollPaused(true)}
+              >
+                {footerJumpLabels[locale]} ↓
+              </a>
+              {autoScrollPaused && (
+                <button
+                  type="button"
+                  className={styles.resumeScrollButton}
+                  onClick={() => setAutoScrollPaused(false)}
+                >
+                  {resumeScrollLabels[locale]} ↑
+                </button>
+              )}
+            </div>
             <PageEditorial
               locale={locale}
               scopeKey={
@@ -1339,61 +1406,64 @@ export function TodayExperience({ data, locale, scope = "today", heading, initia
         <aside className={styles.intelligenceRail}>
           <AdSlot format="rectangle" label={copy.advertisement} />
 
-          {activeSpotlightMatch && activeSpotlightMarket && (
-            <section className={styles.oraclePanel}>
-              <div className={styles.oraclePanelHeader}>
-                <span><Sparkles size={15} /> {copy.oraclePick}</span>
-              </div>
-              <div className={styles.selectedFixture}>
-                <div className={styles.fixtureTeams}>
-                  <span><Crest team={activeSpotlightMatch.home} />{activeSpotlightMatch.home.name}</span>
-                  <strong>vs</strong>
-                  <span><Crest team={activeSpotlightMatch.away} />{activeSpotlightMatch.away.name}</span>
+          {activeSpotlightMatch && activeSpotlightMarket && (() => {
+            const selectedMarket = activeSpotlightMarket;
+            return (
+              <section className={styles.oraclePanel}>
+                <div className={styles.oraclePanelHeader}>
+                  <span><Sparkles size={15} /> {copy.oraclePick}</span>
                 </div>
-                <div className={styles.fixtureTime}><Clock3 size={14} /> {activeSpotlightMatch.kickoff}</div>
-              </div>
-              <div className={styles.oracleDecision}>
-                <div className={styles.oracleScoreMetric} title={interpolate(copy.oracleScore, { score: activeSpotlightMarket.confidence })}>
-                  <OracleGauge score={activeSpotlightMarket.confidence} />
+                <div className={styles.selectedFixture}>
+                  <div className={styles.fixtureTeams}>
+                    <span><Crest team={activeSpotlightMatch.home} />{activeSpotlightMatch.home.name}</span>
+                    <strong>vs</strong>
+                    <span><Crest team={activeSpotlightMatch.away} />{activeSpotlightMatch.away.name}</span>
+                  </div>
+                  <div className={styles.fixtureTime}><Clock3 size={14} /> {activeSpotlightMatch.kickoff}</div>
                 </div>
-                <div>
-                  <h2>{activeSpotlightMarket.selection}</h2>
-                  <span>{activeSpotlightMarket.odds ?? "—"} {copy.odds}</span>
+                <div className={styles.oracleDecision}>
+                  <div className={styles.oracleScoreMetric} title={interpolate(copy.oracleScore, { score: selectedMarket.confidence })}>
+                    <OracleGauge score={selectedMarket.confidence} />
+                  </div>
+                  <div>
+                    <h2>{selectedMarket.selection}</h2>
+                    <span>{selectedMarket.odds ?? "—"} {copy.odds}</span>
+                  </div>
                 </div>
-              </div>
-              {activeSpotlightMarket.outcome && (
-                <div className={styles.settlementBanner}>
-                  <OutcomeBadge outcome={activeSpotlightMarket.outcome} labels={statuses} />
-                  <span>{copy.settledFullTime}</span>
-                </div>
-              )}
-              {activeSpotlightMatch.insight && <p className={styles.insight}>{translateInsight(locale, activeSpotlightMatch.insight)}</p>}
-              <div className={styles.panelActions}>
-                <button
-                  className={styles.primaryButton}
-                  disabled={!activeSpotlightMatch.slug}
-                  onClick={() => activeSpotlightMatch.slug && router.push(`/${locale}/match/${activeSpotlightMatch.slug}`)}
-                >
-                  {copy.fullIntelligence} <ChevronRight size={16} />
-                </button>
-                {SHOW_TODAY_ADD_TO_PICKS && (
-                  <button
-                    className={styles.secondaryButton}
-                    onClick={() => {
-                      const pickKey = getPickKey(activeSpotlightMatch, marketLens);
-                      if (activeSpotlightMarket.available && !activeSpotlightMarket.outcome) {
-                        toggleSet(setAdded, pickKey);
-                      }
-                    }}
-                    disabled={Boolean(activeSpotlightMarket.outcome) || !activeSpotlightMarket.available}
-                  >
-                    {activeSpotlightMarket.outcome ? <CircleCheck size={16} /> : added.has(getPickKey(activeSpotlightMatch, marketLens)) ? <Check size={16} /> : <Plus size={16} />}
-                    {activeSpotlightMarket.outcome ? copy.settled : added.has(getPickKey(activeSpotlightMatch, marketLens)) ? copy.added : copy.myPicks}
-                  </button>
+                {selectedMarket.outcome && (
+                  <div className={styles.settlementBanner}>
+                    <OutcomeBadge outcome={selectedMarket.outcome} labels={statuses} />
+                    <span>{copy.settledFullTime}</span>
+                  </div>
                 )}
-              </div>
-            </section>
-          )}
+                {activeSpotlightMatch.insight && <p className={styles.insight}>{translateInsight(locale, activeSpotlightMatch.insight)}</p>}
+                <div className={styles.panelActions}>
+                  <button
+                    className={styles.primaryButton}
+                    disabled={!activeSpotlightMatch.slug}
+                    onClick={() => activeSpotlightMatch.slug && router.push(`/${locale}/match/${activeSpotlightMatch.slug}`)}
+                  >
+                    {copy.fullIntelligence} <ChevronRight size={16} />
+                  </button>
+                  {SHOW_TODAY_ADD_TO_PICKS && (
+                    <button
+                      className={styles.secondaryButton}
+                      onClick={() => {
+                        const pickKey = getPickKey(activeSpotlightMatch, marketLens);
+                        if (selectedMarket.available && !selectedMarket.outcome) {
+                          toggleSet(setAdded, pickKey);
+                        }
+                      }}
+                      disabled={Boolean(selectedMarket.outcome) || !selectedMarket.available}
+                    >
+                      {selectedMarket.outcome ? <CircleCheck size={16} /> : added.has(getPickKey(activeSpotlightMatch, marketLens)) ? <Check size={16} /> : <Plus size={16} />}
+                      {selectedMarket.outcome ? copy.settled : added.has(getPickKey(activeSpotlightMatch, marketLens)) ? copy.added : copy.myPicks}
+                    </button>
+                  )}
+                </div>
+              </section>
+            );
+          })()}
 
           <AdSlot format="half-page" label={copy.advertisement} />
         </aside>
