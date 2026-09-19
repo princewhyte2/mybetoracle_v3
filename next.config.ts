@@ -84,7 +84,7 @@ const nextConfig: NextConfig = {
     ];
   },
   async redirects() {
-    return [
+    const rules = [
       ...LEGACY_LOCALES.flatMap((locale) => [
         {
           source: `/${locale}/predictions`,
@@ -119,6 +119,10 @@ const nextConfig: NextConfig = {
         })),
       ),
     ];
+    // Some legacy locale segments (e.g. en/betslip) happen to match a real
+    // current V3 route exactly, which builds a self-redirect and creates an
+    // infinite redirect loop. Drop those instead of redirecting a page to itself.
+    return rules.filter((rule) => rule.source !== rule.destination);
   },
   async headers() {
     return [
