@@ -28,7 +28,10 @@
 /* Ad Placements */
 .adLeaderboardWrapper { display: flex; justify-content: center; margin: 16px 0 8px; min-height: 90px; }
 .adInFeedWrapper { display: flex; justify-content: center; margin: 12px 0; min-height: 100px; }
-.adRailWrapper { display: flex; justify-content: center; min-height: 250px; border-radius: 8px; overflow: hidden; position: sticky; top: 64px; }
+/* Not sticky: a real content panel (.uncertaintyPanel) follows this in the
+   rail's normal flow, so a stuck ad here would scroll-cover it -- same bug
+   found and reverted on /today's and /match's rectangle ad slot. */
+.adRailWrapper { display: flex; justify-content: center; min-height: 250px; border-radius: 8px; overflow: hidden; }
 .mobileAnchorWrapper { display: none; }
 
 .bandSection { margin-top: 14px; }

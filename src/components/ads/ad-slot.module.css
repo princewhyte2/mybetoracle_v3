@@ -78,16 +78,21 @@
   }
 }
 
-/* 2. Medium Rectangle: 300x250 -- sticky so sidebar ads stay visible while
-   the page scrolls, matching the same top offset as the left nav sidebar
-   (topbar height, see today-experience.module.css .sidebar). */
+/* 2. Medium Rectangle: 300x250. NOT sticky: on /today and /match this sits
+   directly above the Oracle Pick panel / match-info panels in the same
+   normal-flow rail -- making it sticky let it hover fixed at the top while
+   that panel scrolled up underneath it, visually covering it (real bug,
+   found and reverted 2026-09-19). The half-page slot below stays sticky
+   since nothing follows it in the rail, so it can't cover anything.
+   Making ads genuinely stay visible for the whole scroll without this
+   overlap needs the rail itself bounded like the left sidebar already is
+   -- a bigger, shared-CSS change worth doing carefully with visual
+   verification, not guessed at again here. */
 .rectangle {
   width: 100%;
   max-width: 300px;
   min-height: 270px;
   margin: 0 auto;
-  position: sticky;
-  top: 64px;
   box-sizing: border-box;
 }
 
@@ -99,16 +104,17 @@
   box-sizing: border-box;
 }
 
-/* 3. Half Page / Sticky Skyscraper: 300x600 -- top offset stacks it below a
-   stuck rectangle (64px topbar + 270px rectangle + margin) so the two never
-   overlap even on a rail with little or no content between them. */
+/* 3. Half Page / Sticky Skyscraper: 300x600. Safe to keep sticky: it's
+   placed last in every rail that uses it (after Oracle Pick / match-info
+   panels), so nothing scrolls up underneath it to be covered. Top offset
+   matches the topbar height, same reference point as the left sidebar. */
 .halfPage {
   width: 100%;
   max-width: 300px;
   min-height: 620px;
   margin: 0 auto;
   position: sticky;
-  top: 348px;
+  top: 64px;
   box-sizing: border-box;
 }
 
