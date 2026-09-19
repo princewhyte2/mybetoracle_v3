@@ -66,7 +66,15 @@ function mapResponse(api: TodayApiResponse, locale: Locale): TodayData {
 export async function getTodayData({ date, locale, page = 1, cursor, view = "all", marketGroup, search }: { date: string; locale: Locale; page?: number; cursor?: string; view?: "all" | "live" | "top" | "value"; marketGroup?: string; search?: string }): Promise<TodayData> {
   const baseUrl = process.env.MYBETORACLE_SERVER_BASE_URL?.replace(/\/$/, ""); const serviceKey = process.env.MYBETORACLE_SERVER_SERVICE_KEY;
   if (!baseUrl || !serviceKey || serviceKey.length < 32) throw new TodayFeedError("TODAY_CONFIGURATION_ERROR");
-  const url = new URL(`${baseUrl}/api/v3/today`); url.searchParams.set("date", date); url.searchParams.set("timezone", "Africa/Lagos"); url.searchParams.set("locale", locale); url.searchParams.set("page", String(page)); url.searchParams.set("pageSize", "120"); url.searchParams.set("view", view); if (marketGroup) url.searchParams.set("marketGroup", marketGroup); if (cursor) url.searchParams.set("cursor", cursor); if (search) url.searchParams.set("search", search);
+  // Ranked (top/value) fixtures carry an extra rankedSelection object per
+  // item on top of the full predictions array, running ~25% heavier than a
+  // regular fixture -- at pageSize 120 that intermittently exceeds Next.js's
+  // 2MB fetch data-cache entry limit (observed 2.39-2.45MB), which silently
+  // disables server-side caching for the page on days with heavier payloads.
+  // A lower cap keeps ranked pages reliably cacheable regardless of daily
+  // fixture-size variance; existing pagination already lets users page for more.
+  const pageSize = view === "top" || view === "value" ? 80 : 120;
+  const url = new URL(`${baseUrl}/api/v3/today`); url.searchParams.set("date", date); url.searchParams.set("timezone", "Africa/Lagos"); url.searchParams.set("locale", locale); url.searchParams.set("page", String(page)); url.searchParams.set("pageSize", String(pageSize)); url.searchParams.set("view", view); if (marketGroup) url.searchParams.set("marketGroup", marketGroup); if (cursor) url.searchParams.set("cursor", cursor); if (search) url.searchParams.set("search", search);
   const isSearch = Boolean(search && search.trim().length > 0);
   const fetchOptions: RequestInit = isSearch
     ? { cache: "no-store", headers: { Accept: "application/json", "X-MyBetOracle-V3-Key": serviceKey } }
