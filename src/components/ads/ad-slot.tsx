@@ -111,7 +111,12 @@ export function AdSlot({ format, slotId, className, label = "Advertisement" }: A
           <ins
             ref={adRef}
             className="adsbygoogle"
-            style={{ display: "block" }}
+            // adInner is a flex row with justify-content: center (main-axis
+            // positioning, not stretching), so an empty block element with
+            // no intrinsic content collapses to 0 width here -- explicit
+            // width is required for Google's own script to determine an ad
+            // size ("No slot size for availableWidth=0" otherwise).
+            style={{ display: "block", width: "100%" }}
             data-ad-client={clientId}
             data-ad-slot={effectiveSlotId}
             data-ad-format="auto"
