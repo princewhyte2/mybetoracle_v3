@@ -78,12 +78,16 @@
   }
 }
 
-/* 2. Medium Rectangle: 300x250 */
+/* 2. Medium Rectangle: 300x250 -- sticky so sidebar ads stay visible while
+   the page scrolls, matching the same top offset as the left nav sidebar
+   (topbar height, see today-experience.module.css .sidebar). */
 .rectangle {
   width: 100%;
   max-width: 300px;
   min-height: 270px;
   margin: 0 auto;
+  position: sticky;
+  top: 64px;
   box-sizing: border-box;
 }
 
@@ -95,14 +99,16 @@
   box-sizing: border-box;
 }
 
-/* 3. Half Page / Sticky Skyscraper: 300x600 */
+/* 3. Half Page / Sticky Skyscraper: 300x600 -- top offset stacks it below a
+   stuck rectangle (64px topbar + 270px rectangle + margin) so the two never
+   overlap even on a rail with little or no content between them. */
 .halfPage {
   width: 100%;
   max-width: 300px;
   min-height: 620px;
   margin: 0 auto;
   position: sticky;
-  top: 84px;
+  top: 348px;
   box-sizing: border-box;
 }
 
