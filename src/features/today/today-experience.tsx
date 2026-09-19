@@ -520,13 +520,15 @@ function CompetitionBlock({
               <span>{oraclePicksCount}</span>
             </span>
           )}
-          <Link
-            href={`/${locale}/competitions/${entitySlug(competition.name, competition.id)}`}
-            prefetch={false}
-            className={styles.standingsLink}
-          >
-            {copy.standings}
-          </Link>
+          {competition.id !== "ranked-discovery" && (
+            <Link
+              href={`/${locale}/competitions/${entitySlug(competition.name, competition.id)}`}
+              prefetch={false}
+              className={styles.standingsLink}
+            >
+              {copy.standings}
+            </Link>
+          )}
         </div>
       </header>
       {!collapsed && (
