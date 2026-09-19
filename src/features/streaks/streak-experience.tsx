@@ -25,6 +25,7 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import { MboMark } from "@/components/brand/brand-marks";
+import { AdSlot } from "@/components/ads/ad-slot";
 import { MobileProductMenu } from "@/components/navigation/mobile-product-menu";
 import { locales, type Locale } from "@/i18n/config";
 import { getMessages } from "@/i18n/messages";
@@ -311,6 +312,8 @@ export function StreakExperience({ data, locale }: { data: StreakExplorerData; l
               <button className={styles.howButton} onClick={() => setMethodOpen(true)}><Info size={16} /> {copy.how}</button>
             </div>
           </div>
+
+          <AdSlot format="leaderboard" label={copy.advertisement} />
 
           <nav className={styles.categoryNav} aria-label={copy.categories}>
             {primaryViews.map((item) => <button key={item.metric} className={metric === item.metric ? styles.categoryActive : ""} onClick={() => updateQuery({ metric: item.metric, category: undefined })}>{item.label}</button>)}

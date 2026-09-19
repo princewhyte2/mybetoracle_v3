@@ -28,6 +28,7 @@ import {
   X,
 } from "lucide-react";
 import { MboMark } from "@/components/brand/brand-marks";
+import { AdSlot } from "@/components/ads/ad-slot";
 import { MobileProductMenu } from "@/components/navigation/mobile-product-menu";
 import { locales, type Locale } from "@/i18n/config";
 import { translateMarketSelection } from "@/i18n/football";
@@ -1144,6 +1145,7 @@ export function DiscoveryExperience({
               )}
             </header>
           )}
+          <AdSlot format="leaderboard" label={copy.advertisement} />
           {children}
           {view === "explore" && <ExploreHome locale={locale} data={visibleData} />}{" "}
           {view === "calendar" && <CalendarView locale={locale} data={visibleData} />}{" "}

@@ -47,6 +47,7 @@ type ResultsLabels = {
   method: string;
   decided: string;
   oddsNotRecorded: string;
+  advertisement: string;
 };
 
 export const resultsLabels: Record<Locale, ResultsLabels> = {
@@ -99,6 +100,7 @@ export const resultsLabels: Record<Locale, ResultsLabels> = {
       "Hit rate equals wins divided by decided predictions. Voids remain visible but are excluded from the denominator. Historical results do not guarantee future outcomes.",
     decided: "decided",
     oddsNotRecorded: "Publication odds not recorded",
+    advertisement: "Advertisement",
   },
   es: {
     noAccas: "No hay Multi-Picks finalizados en este período.",
@@ -150,6 +152,7 @@ export const resultsLabels: Record<Locale, ResultsLabels> = {
       "La tasa de acierto divide los pronósticos ganados entre los decididos. Los anulados siguen visibles, pero no cuentan en el denominador. El historial no garantiza resultados futuros.",
     decided: "decididos",
     oddsNotRecorded: "Cuota de publicación no registrada",
+    advertisement: "Publicidad",
   },
   fr: {
     noAccas: "Aucun Multi-Pick terminé sur cette période.",
@@ -200,6 +203,7 @@ export const resultsLabels: Record<Locale, ResultsLabels> = {
       "Le taux de réussite correspond aux pronostics gagnés divisés par les pronostics décidés. Les annulations restent visibles, mais sont exclues du calcul. Les résultats passés ne garantissent pas les résultats futurs.",
     decided: "décidés",
     oddsNotRecorded: "Cote de publication non enregistrée",
+    advertisement: "Publicité",
   },
   de: {
     noAccas: "Keine abgeschlossenen Multi-Picks in diesem Zeitraum.",
@@ -251,6 +255,7 @@ export const resultsLabels: Record<Locale, ResultsLabels> = {
       "Die Trefferquote entspricht den gewonnenen geteilt durch die entschiedenen Prognosen. Stornierte Tipps bleiben sichtbar, werden aber nicht mitgerechnet. Vergangene Ergebnisse garantieren keine künftigen Resultate.",
     decided: "entschieden",
     oddsNotRecorded: "Veröffentlichungsquote nicht erfasst",
+    advertisement: "Werbung",
   },
   it: {
     noAccas: "Nessun Multi-Pick concluso in questo periodo.",
@@ -302,6 +307,7 @@ export const resultsLabels: Record<Locale, ResultsLabels> = {
       "Il tasso di successo corrisponde ai pronostici vinti divisi per quelli decisi. Gli annullati restano visibili, ma sono esclusi dal calcolo. I risultati passati non garantiscono quelli futuri.",
     decided: "decisi",
     oddsNotRecorded: "Quota di pubblicazione non registrata",
+    advertisement: "Pubblicità",
   },
   pt: {
     noAccas: "Nenhum Multi-Pick concluído neste período.",
@@ -352,5 +358,6 @@ export const resultsLabels: Record<Locale, ResultsLabels> = {
       "A taxa de acerto divide os palpites ganhos pelos decididos. Os anulados continuam visíveis, mas ficam fora do denominador. O histórico não garante resultados futuros.",
     decided: "decididos",
     oddsNotRecorded: "Odd de publicação não registrada",
+    advertisement: "Publicidade",
   },
 };

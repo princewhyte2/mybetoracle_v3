@@ -21,6 +21,7 @@ import {
   X,
 } from "lucide-react";
 import { MboMark } from "@/components/brand/brand-marks";
+import { AdSlot } from "@/components/ads/ad-slot";
 import shellStyles from "@/features/today/today-experience.module.css";
 import type { DiscoveryData } from "@/features/discovery/types";
 import { locales, type Locale } from "@/i18n/config";
@@ -219,6 +220,7 @@ export function ToolExperience({
                 : copy.analyzerDescription}
             </p>
           </header>
+          <AdSlot format="leaderboard" label={copy.advertisement} />
           <div className={styles.workspace}>
             <section className={styles.available}>
               <header>
