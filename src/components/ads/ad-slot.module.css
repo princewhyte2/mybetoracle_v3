@@ -132,7 +132,9 @@
 }
 
 /* Gracefully hide the entire ad container if AdSense reports the ad as unfilled */
+/* TEMP DEBUG (remove before/after diagnosing manual-unit fill rate):
 .adWrapper:has(ins[data-ad-status="unfilled"]) {
   display: none !important;
 }
+*/
 
