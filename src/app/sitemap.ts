@@ -46,6 +46,18 @@ async function marketScopeEntries(origin: string): Promise<MetadataRoute.Sitemap
     }).map(promise => promise.catch(() => [])));
     entries.push(...pages.flat());
   }
+  // Ranked views (top-picks/value-picks, both scopes) and live-scores
+  // (today only, see buildMarketScopeStaticParams) are real, statically
+  // generated, indexable pages via market-scope-page.tsx, but aren't in
+  // marketPresentation's slug dictionary so the loop above never covers
+  // them -- they were simply missing from the sitemap entirely until now.
+  for (const locale of locales) {
+    for (const slug of ["top-picks", "value-picks"]) {
+      entries.push({ url: `${origin}/${locale}/today/${slug}`, changeFrequency: "daily" as const, priority: 0.72 });
+      entries.push({ url: `${origin}/${locale}/tomorrow/${slug}`, changeFrequency: "daily" as const, priority: 0.72 });
+    }
+    entries.push({ url: `${origin}/${locale}/today/live-scores`, changeFrequency: "daily" as const, priority: 0.85 });
+  }
   return entries;
 }
 

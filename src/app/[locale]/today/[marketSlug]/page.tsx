@@ -4,7 +4,7 @@ export const dynamicParams = false;
 export const revalidate = 60;
 
 export function generateStaticParams() {
-  return buildMarketScopeStaticParams();
+  return buildMarketScopeStaticParams("today");
 }
 
 export async function generateMetadata(props: { params: Promise<{ locale: string; marketSlug: string }> }) {
