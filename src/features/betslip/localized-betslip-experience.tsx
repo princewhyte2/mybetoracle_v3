@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { MboMark } from "@/components/brand/brand-marks";
 import { AdSlot } from "@/components/ads/ad-slot";
+import { RoutePendingIndicator, useRoutePendingTransition } from "@/components/navigation/route-pending-indicator";
 import { MobileProductMenu } from "@/components/navigation/mobile-product-menu";
 import type { AccumulatorLeg, AccumulatorResult } from "@/features/accumulators/types";
 import shellStyles from "@/features/today/today-experience.module.css";
@@ -48,13 +49,15 @@ function LegRow({ leg, locale, onOpen, copy, common }: { leg: AccumulatorLeg; lo
 
 export function BetslipExperience({ data, locale }: { data: DailyBetslip; locale: Locale }) {
   const router = useRouter(); const copy = withMultiPickTerminology(betslipLabels[locale], locale, "betslip"); const common = getMessages(locale).common;
+  const { isPending: dateChangePending, pushTransition: pushDateChange } = useRoutePendingTransition();
   const [menuOpen,setMenuOpen]=useState(false); const [saved,setSaved]=useState(false);
   const navigate=(route:string)=>router.push(`/${locale}/${route}`); const date=new Date(`${data.date}T12:00:00Z`); const generated=new Date(data.generatedAt);
-  const changeDate=(days:number)=>{const next=new Date(date);next.setUTCDate(next.getUTCDate()+days);router.push(`/${locale}/betslip?date=${next.toISOString().slice(0,10)}`)};
+  const changeDate=(days:number)=>{const next=new Date(date);next.setUTCDate(next.getUTCDate()+days);pushDateChange(`/${locale}/betslip?date=${next.toISOString().slice(0,10)}`)};
   const share=async()=>{const url=window.location.href;if(navigator.share)await navigator.share({title:"Oracle Daily",url});else await navigator.clipboard.writeText(url)};
   const savePublication=async()=>{const method=saved?"DELETE":"PUT";const response=await fetch(`/api/saved/oracle-daily/${data.id}`,{method});if(response.status===401){router.push(`/${locale}/auth?returnTo=${encodeURIComponent(window.location.pathname+window.location.search)}`);return}if(response.ok)setSaved(value=>!value)};
   const averageOracle=Math.round(data.legs.reduce((sum,leg)=>sum+leg.prediction.confidenceScore,0)/data.legs.length);
   return <div className={`${shellStyles.app} ${styles.app}`}>
+    <RoutePendingIndicator active={dateChangePending} />
     <header className={shellStyles.topbar}><div className={shellStyles.topbarInner}><button className={`${shellStyles.brand} ${styles.brand}`} onClick={()=>navigate("today")}><MboMark className={shellStyles.brandMark} title="MyBetOracle"/><span className={shellStyles.brandName}>MyBetOracle</span></button><label className={shellStyles.globalSearch}><Search size={18}/><input placeholder={copy.searchPlaceholder}/><kbd>Ctrl K</kbd></label><div className={shellStyles.topbarActions}><button className={shellStyles.topIconButton} aria-label={common.notifications} onClick={()=>navigate("saved")}><Bell size={19}/></button><label className={shellStyles.localeSelect}><Languages size={18}/><select value={locale} onChange={e=>router.push(`/${e.target.value}/betslip?date=${data.date}`)} aria-label={common.language}>{locales.map(item=><option key={item} value={item}>{localeNames[item]}</option>)}</select></label><button className={shellStyles.avatarButton} aria-label={common.profile} onClick={()=>navigate("profile")}><UserCircle size={24}/></button><button className={shellStyles.mobileMenuButton} aria-label={common.openNavigation} onClick={()=>setMenuOpen(v=>!v)}>{menuOpen?<X size={22}/>:<Menu size={22}/>}</button></div></div></header>
     {menuOpen&&<MobileProductMenu locale={locale} activeRoute="betslip" onNavigate={()=>setMenuOpen(false)}/>}
     <div className={shellStyles.shell}>

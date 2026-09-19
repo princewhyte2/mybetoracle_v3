@@ -36,6 +36,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Fragment, useEffect, useMemo, useState } from "react";
 import { AdSlot } from "@/components/ads/ad-slot";
+import { RoutePendingIndicator, useRoutePendingTransition } from "@/components/navigation/route-pending-indicator";
 import { MboMark } from "@/components/brand/brand-marks";
 import { MobileProductMenu } from "@/components/navigation/mobile-product-menu";
 import { buildPublicMatchPath } from "@/features/match/public-match-url";
@@ -492,6 +493,7 @@ function HistoryDrawer({ history, onClose, locale }: { history: AccumulatorHisto
 
 export function MultiPicksExperience({ daily, weekly, locale }: { daily: AccumulatorPageData; weekly: AccumulatorPageData; locale: Locale }) {
   const router = useRouter();
+  const { isPending: dateChangePending, pushTransition: pushDateChange } = useRoutePendingTransition();
   const labels = getLabels(locale);
   const common = getMessages(locale).common;
   const [scope, setScope] = useState<AccumulatorScope>("DAILY");
@@ -556,11 +558,12 @@ export function MultiPicksExperience({ daily, weekly, locale }: { daily: Accumul
   function changeDate(days: number) {
     const next = new Date(`${data.date}T12:00:00.000Z`);
     next.setUTCDate(next.getUTCDate() + days);
-    router.push(`/${locale}/multi-picks?date=${next.toISOString().slice(0, 10)}`);
+    pushDateChange(`/${locale}/multi-picks?date=${next.toISOString().slice(0, 10)}`);
   }
 
   return (
     <div className={`${shellStyles.app} ${styles.app}`}>
+      <RoutePendingIndicator active={dateChangePending} />
       <header className={shellStyles.topbar}>
         <div className={shellStyles.topbarInner}>
           <button className={`${shellStyles.brand} ${styles.brandButton}`} onClick={() => navigate("today")} aria-label={`MyBetOracle ${common.today}`}>

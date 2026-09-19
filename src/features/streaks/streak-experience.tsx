@@ -26,6 +26,7 @@ import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import { MboMark } from "@/components/brand/brand-marks";
 import { AdSlot } from "@/components/ads/ad-slot";
+import { RoutePendingIndicator, useRoutePendingTransition } from "@/components/navigation/route-pending-indicator";
 import { MobileProductMenu } from "@/components/navigation/mobile-product-menu";
 import { locales, type Locale } from "@/i18n/config";
 import { getMessages } from "@/i18n/messages";
@@ -128,6 +129,7 @@ function ComparisonTeam({
 
 export function StreakExperience({ data, locale }: { data: StreakExplorerData; locale: Locale }) {
   const router = useRouter();
+  const { isPending: filterPending, pushTransition: pushFilterChange } = useRoutePendingTransition();
   const copy = streakLabels[locale];
   const common = getMessages(locale).common;
   type MetricView = { category?: undefined; metric: StreakMetric; label: string };
@@ -225,16 +227,17 @@ export function StreakExperience({ data, locale }: { data: StreakExplorerData; l
 
   function updateQuery(patch: Record<string, string | number | undefined>) {
     const params = buildQuery({ page: 1, ...patch });
-    router.push(`/${locale}/streaks${params.size ? `?${params}` : ""}`);
+    pushFilterChange(`/${locale}/streaks${params.size ? `?${params}` : ""}`);
   }
 
   function clearFilters() {
     setSearchDraft("");
-    router.push(`/${locale}/streaks`);
+    pushFilterChange(`/${locale}/streaks`);
   }
 
   return (
     <div className={`${shellStyles.app} ${styles.app}`}>
+      <RoutePendingIndicator active={filterPending} />
       <header className={shellStyles.topbar}>
         <div className={shellStyles.topbarInner}>
           <button className={`${shellStyles.brand} ${styles.brandButton}`} onClick={() => navigate("today")} aria-label={`MyBetOracle ${common.today}`}>

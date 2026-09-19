@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import { MboMark } from "@/components/brand/brand-marks";
 import { AdSlot } from "@/components/ads/ad-slot";
+import { RoutePendingIndicator, useRoutePendingTransition } from "@/components/navigation/route-pending-indicator";
 import shellStyles from "@/features/today/today-experience.module.css";
 import type { DiscoveryData } from "@/features/discovery/types";
 import { locales, type Locale } from "@/i18n/config";
@@ -60,6 +61,7 @@ export function ToolExperience({
   view: ToolView;
 }) {
   const router = useRouter();
+  const { isPending: matchOpenPending, pushTransition: pushMatchOpen } = useRoutePendingTransition();
   const copy=toolLabels[locale]; const common=getMessages(locale).common;
   const [menu, setMenu] = useState(false);
   const available = data.fixtures.filter(
@@ -108,6 +110,7 @@ export function ToolExperience({
   }
   return (
     <div className={`${shellStyles.app} ${styles.app}`}>
+      <RoutePendingIndicator active={matchOpenPending} />
       <header className={shellStyles.topbar}>
         <div className={shellStyles.topbarInner}>
           <button
@@ -238,7 +241,7 @@ export function ToolExperience({
                   <article key={item.id}>
                     <button
                       onClick={() =>
-                        router.push(`/${locale}/today?date=${data.date}`)
+                        pushMatchOpen(`/${locale}/today?date=${data.date}`)
                       }
                     >
                       <span>

@@ -6,6 +6,7 @@ import { marketPresentation, valueViewLabels } from "@/features/discovery/market
 import { discoveryLabels } from "@/features/discovery/labels";
 import { entitySlug } from "@/features/discovery/public-id";
 import { AdSlot } from "@/components/ads/ad-slot";
+import { RoutePendingIndicator, useRoutePendingTransition } from "@/components/navigation/route-pending-indicator";
 import Link from "next/link";
 import { PageEditorial } from "@/components/editorial/page-editorial";
 
@@ -365,7 +366,6 @@ function ScopeMarketNav({
       <div className={styles.scopeNavDateLinks}>
         <Link
           href={`/${locale}/today`}
-          prefetch={false}
           aria-current={scope === "today" && marketLens === "best" ? "page" : undefined}
           className={`${styles.scopeMarketLink} ${scope === "today" && marketLens === "best" ? styles.scopeMarketLinkActive : ""}`}
         >
@@ -373,7 +373,6 @@ function ScopeMarketNav({
         </Link>
         <Link
           href={`/${locale}/tomorrow`}
-          prefetch={false}
           aria-current={scope === "tomorrow" && marketLens === "best" ? "page" : undefined}
           className={`${styles.scopeMarketLink} ${scope === "tomorrow" && marketLens === "best" ? styles.scopeMarketLinkActive : ""}`}
         >
@@ -386,7 +385,6 @@ function ScopeMarketNav({
       <div className={styles.scopeMarketQuickPills}>
         <Link
           href={getMarketOptionHref(locale, scope, "top", dateIso)}
-          prefetch={false}
           className={`${styles.scopeMarketQuickPill} ${marketLens === "top" ? styles.scopeMarketQuickPillActive : ""}`}
           aria-current={marketLens === "top" ? "page" : undefined}
         >
@@ -395,7 +393,6 @@ function ScopeMarketNav({
         </Link>
         <Link
           href={getMarketOptionHref(locale, scope, "value", dateIso)}
-          prefetch={false}
           className={`${styles.scopeMarketQuickPill} ${marketLens === "value" ? styles.scopeMarketQuickPillActive : ""}`}
           aria-current={marketLens === "value" ? "page" : undefined}
         >
@@ -404,7 +401,6 @@ function ScopeMarketNav({
         </Link>
         <Link
           href={getMarketOptionHref(locale, scope, "MIXED", dateIso)}
-          prefetch={false}
           className={`${styles.scopeMarketQuickPill} ${marketLens === "MIXED" ? styles.scopeMarketQuickPillActive : ""}`}
           aria-current={marketLens === "MIXED" ? "page" : undefined}
         >
@@ -413,7 +409,6 @@ function ScopeMarketNav({
         </Link>
         <Link
           href={getMarketOptionHref(locale, scope, "DOUBLE_CHANCE", dateIso)}
-          prefetch={false}
           className={`${styles.scopeMarketQuickPill} ${marketLens === "DOUBLE_CHANCE" ? styles.scopeMarketQuickPillActive : ""}`}
           aria-current={marketLens === "DOUBLE_CHANCE" ? "page" : undefined}
         >
@@ -421,7 +416,6 @@ function ScopeMarketNav({
         </Link>
         <Link
           href={getMarketOptionHref(locale, scope, "BTTS", dateIso)}
-          prefetch={false}
           className={`${styles.scopeMarketQuickPill} ${marketLens === "BTTS" ? styles.scopeMarketQuickPillActive : ""}`}
           aria-current={marketLens === "BTTS" ? "page" : undefined}
         >
@@ -429,7 +423,6 @@ function ScopeMarketNav({
         </Link>
         <Link
           href={getMarketOptionHref(locale, scope, "TOTAL_2_5", dateIso)}
-          prefetch={false}
           className={`${styles.scopeMarketQuickPill} ${marketLens === "TOTAL_2_5" ? styles.scopeMarketQuickPillActive : ""}`}
           aria-current={marketLens === "TOTAL_2_5" ? "page" : undefined}
         >
@@ -437,7 +430,6 @@ function ScopeMarketNav({
         </Link>
         <Link
           href={getMarketOptionHref(locale, scope, "CORNERS", dateIso)}
-          prefetch={false}
           className={`${styles.scopeMarketQuickPill} ${marketLens === "CORNERS" ? styles.scopeMarketQuickPillActive : ""}`}
           aria-current={marketLens === "CORNERS" ? "page" : undefined}
         >
@@ -446,7 +438,6 @@ function ScopeMarketNav({
         </Link>
         <Link
           href={getMarketOptionHref(locale, scope, "CARDS", dateIso)}
-          prefetch={false}
           className={`${styles.scopeMarketQuickPill} ${marketLens === "CARDS" ? styles.scopeMarketQuickPillActive : ""}`}
           aria-current={marketLens === "CARDS" ? "page" : undefined}
         >
@@ -556,6 +547,7 @@ function CompetitionBlock({
 
 export function TodayExperience({ data, locale, scope = "today", heading, initialMarket = "best", pinnedCompetitions = [] }: { data: TodayData; locale: Locale; scope?: "today" | "tomorrow"; heading?: string; initialMarket?: PredictionLens; pinnedCompetitions?: ReadonlyArray<Pick<Competition, "id" | "name" | "countryCode">> }) {
   const router = useRouter();
+  const { isPending: dateChangePending, pushTransition: pushDateChange } = useRoutePendingTransition();
   const [feed, setFeed] = useState(data);
   const [allFeed, setAllFeed] = useState(data);
   const copy = withMultiPickTerminology(todayLabels[locale], locale, "today");
@@ -880,7 +872,7 @@ export function TodayExperience({ data, locale, scope = "today", heading, initia
 
   function changeDate(offset: number) {
     const date = new Date(feed.dateIso); date.setUTCDate(date.getUTCDate() + offset);
-    router.push(`/${locale}/today?date=${date.toISOString().slice(0, 10)}`);
+    pushDateChange(`/${locale}/today?date=${date.toISOString().slice(0, 10)}`);
   }
 
   function navigate(route?: string) {
@@ -921,6 +913,7 @@ export function TodayExperience({ data, locale, scope = "today", heading, initia
 
   return (
     <div className={styles.app}>
+      <RoutePendingIndicator active={dateChangePending} />
       <header className={styles.topbar}>
         <div className={styles.topbarInner}>
           <button className={styles.brand} onClick={() => navigate("today")} aria-label={`MyBetOracle ${common.today}`}>
